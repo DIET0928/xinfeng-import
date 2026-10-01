@@ -77,7 +77,7 @@
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>欣豐｜北榮管理中心 <span class="version">前端 v2.1</span></h1>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v2.2</span></h1>
       <div class="subtitle">原 Code.gs 邏輯｜GitHub 主管入口｜Excel 本機解析｜Web App 以管理者權限執行</div>
     </div>
   </div>
@@ -130,8 +130,12 @@
     <div class="sectionTitle">本月來源</div>
     <div class="sourceGrid">
       <div class="sourceCard">
-        <div class="sourceName">溱日誌</div><div class="sourceMeta" id="cZhen">—</div>
-        <a class="btn secondary dynLink" data-sheet-template="{mm}月溱日誌" target="_blank">開啟</a>
+        <div class="sourceName">溱日誌－溱</div><div class="sourceMeta" id="cZhen">—</div>
+        <div class="actions">
+          <a class="btn secondary" href="./欣豐_北榮_溱日誌_地端填寫範本.xlsx" download>下載填寫範本</a>
+          <button class="secondary" onclick="openImportType('zhenJournal')">匯入</button>
+          <a class="btn secondary dynLink" data-sheet-template="{mm}月溱日誌" target="_blank">開啟</a>
+        </div>
       </div>
       <div class="sourceCard">
         <div class="sourceName">軒日誌</div><div class="sourceMeta" id="cXuan">—</div>
@@ -189,6 +193,7 @@
         <div class="wide">
           <label>資料來源</label>
           <select id="type" onchange="sourceChanged()">
+            <option value="zhenJournal">溱日誌－溱</option>
             <option value="schedule">病患班表－明軒</option>
             <option value="shuru">病患加班－淑如</option>
             <option value="hanyuHours">員餐加班－涵郁</option>
@@ -233,6 +238,7 @@
 
 <script>
 const SOURCE_SHEET = {
+  zhenJournal:'溱日誌',
   schedule:'結帳',
   shuru:'淑如時數',
   hanyuHours:'涵郁時數',
@@ -625,12 +631,12 @@ function renderPreview(r){
   const rows=r.rows.slice(0,100);
   let h='<div class="tableWrap"><table><thead><tr>'+
     '<th>原列</th><th>日期</th><th>姓名</th><th>工作／代碼</th>'+
-    '<th>時數／點數</th><th>狀態</th><th>備註</th></tr></thead><tbody>';
+    '<th>事件分類</th><th>時數／點數</th><th>單位</th><th>狀態</th><th>備註</th></tr></thead><tbody>';
 
   rows.forEach(x=>{
-    const val=x.hours??x.points??(
+    const val=x.value??x.hours??x.points??(
       x.type==='schedule'?'班表':(
-        typeof x.rawValue==='object'?JSON.stringify(x.rawValue):x.rawValue??''
+        typeof x.rawValue==='object'?'':x.rawValue??''
       )
     );
     const status=String(x.previewStatus||'');
@@ -641,7 +647,9 @@ function renderPreview(r){
       '<td>'+esc(x.dateISO||'')+'</td>'+
       '<td>'+esc(x.name||'')+'</td>'+
       '<td>'+esc(x.work||'')+'</td>'+
+      '<td>'+esc(x.type||'')+'</td>'+
       '<td>'+esc(val)+'</td>'+
+      '<td>'+esc(x.unit||'')+'</td>'+
       '<td class="'+cls+'">'+esc(status)+'</td>'+
       '<td class="long">'+esc(x.note||'')+'</td>'+
       '</tr>';
