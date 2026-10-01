@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>欣豐｜外部 Excel 匯入</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    :root{
+      --bg:#f5f2ee; --card:#fff; --ink:#594c46; --muted:#7d716b;
+      --rose:#ebdce0; --lav:#efeaf7; --green:#e9efe7; --warm:#f2ece5;
+      --line:#cdc4be; --danger:#9e3f3f; --ok:#47694e;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif;color:var(--ink)}
+    .wrap{max-width:980px;margin:28px auto;padding:0 18px 48px}
+    h1{margin:0;padding:18px 22px;background:#d8c6b9;border:1px solid var(--line);border-radius:14px 14px 0 0;font-size:24px}
+    .sub{padding:12px 22px;background:#f3f1ed;border:1px solid var(--line);border-top:0}
+    .card{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+    .title{padding:10px 16px;background:var(--rose);font-weight:700}
+    .body{padding:16px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    label{display:block;font-weight:700;margin-bottom:5px}
+    select,input[type=password],input[type=file]{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;background:#fff;font:inherit}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    button{border:1px solid var(--line);border-radius:9px;padding:10px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--lav);color:var(--ink)}
+    button.primary{background:var(--green)}
+    button:disabled{opacity:.45;cursor:not-allowed}
+    .msg{margin-top:12px;padding:12px;border-radius:8px;background:#f7f6f4;white-space:pre-wrap}
+    .ok{color:var(--ok);font-weight:700}
+    .bad{color:var(--danger);font-weight:700}
+    table{border-collapse:collapse;width:100%;font-size:13px}
+    th,td{border:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+    th{background:#f8ebee}
+    .scroll{overflow:auto;max-height:420px}
+    small{color:var(--muted)}
+    @media(max-width:700px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>欣豐｜外部 Excel 匯入</h1>
+  <div class="sub">主管只需在此頁上傳 Excel；資料預覽後才會寫入「北榮欣豐｜全年自動化管理表」。</div>
+
+  <div class="card">
+    <div class="title">連線設定</div>
+    <div class="body grid">
+      <div>
+        <label>Apps Script Web App 網址</label>
+        <input id="endpoint" type="text" placeholder="https://script.google.com/macros/s/.../exec">
+        <small>第一次設定後會保存在目前瀏覽器。</small>
+      </div>
+      <div>
+        <label>匯入碼</label>
+        <input id="pin" type="password" autocomplete="off" placeholder="由管理者提供">
+        <small>匯入碼不會寫進 GitHub 原始碼。</small>
+      </div>
+    </div>
+    <div class="body" style="padding-top:0">
+      <button onclick="loadDefaults()">測試連線／讀取目前月份</button>
+      <div id="connMsg" class="msg">尚未連線。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="title">選擇匯入資料</div>
+    <div class="body">
+      <div class="grid">
+        <div>
+          <label>來源</label>
+          <select id="type" onchange="typeChanged()">
+            <option value="schedule">病患班表－明軒</option>
+            <option value="shuru">病患加班－淑如</option>
+            <option value="hanyuHours">員餐加班－涵郁</option>
+            <option value="hanyuDays">員餐差勤－涵郁</option>
+            <option value="patientBonus">病患獎金－營養師</option>
+            <option value="staffBonus">員餐獎金－營養師</option>
+          </select>
+        </div>
+        <div>
+          <label>匯入方式</label>
+          <select id="importMode">
+            <option value="replace">取代本月資料</option>
+            <option value="append">只新增</option>
+          </select>
+        </div>
+        <div>
+          <label>民國年度</label>
+          <input id="year" type="number" value="115">
+        </div>
+        <div>
+          <label>月份</label>
+          <input id="month" type="number" min="1" max="12" value="9">
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <label>Excel 檔</label>
+        <input id="file" type="file" accept=".xlsx,.xls">
+      </div>
+
+      <div class="row">
+        <button id="previewBtn" class="primary" onclick="previewExcel()">預覽與檢查</button>
+        <button id="commitBtn" onclick="commitImport()" disabled>確認匯入</button>
+      </div>
+      <div id="msg" class="msg">請先測試連線，再選 Excel。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="title">預覽結果</div>
+    <div class="body">
+      <div id="summary">尚無預覽資料。</div>
+      <div id="preview" class="scroll" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<iframe name="gasTarget" id="gasTarget" style="display:none"></iframe>
+
+<script>
+const state = { preview:null, request:null };
+
+function esc(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function requestId(){ return 'r' + Date.now() + '_' + Math.random().toString(36).slice(2); }
+function endpoint(){
+  const v = document.getElementById('endpoint').value.trim();
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(v)) throw new Error('請貼上 Apps Script Web App 的 /exec 網址。');
+  localStorage.setItem('xfi_webapp_url', v);
+  return v;
+}
+function pin(){
+  const v=document.getElementById('pin').value.trim();
+  if(!v) throw new Error('請輸入匯入碼。');
+  return v;
+}
+function postToGas(action, payload){
+  return new Promise((resolve,reject)=>{
+    let url, code;
+    try { url=endpoint(); code=pin(); } catch(e){ reject(e); return; }
+    const rid=requestId();
+    const form=document.createElement('form');
+    form.method='POST'; form.action=url; form.target='gasTarget'; form.style.display='none';
+    const fields={action, pin:code, requestId:rid, payload:payload ? JSON.stringify(payload) : ''};
+    Object.entries(fields).forEach(([k,v])=>{
+      const i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=v; form.appendChild(i);
+    });
+    const timer=setTimeout(()=>{ cleanup(); reject(new Error('後端逾時，請確認 Web App 部署網址與存取權限。')); },30000);
+    function handler(ev){
+      const d=ev.data;
+      if(!d || d.source!=='xinfeng-import-webapp' || d.requestId!==rid) return;
+      cleanup();
+      d.ok ? resolve(d.data) : reject(new Error(d.message || '後端處理失敗'));
+    }
+    function cleanup(){ clearTimeout(timer); window.removeEventListener('message',handler); form.remove(); }
+    window.addEventListener('message',handler);
+    document.body.appendChild(form); form.submit();
+  });
+}
+async function loadDefaults(){
+  const box=document.getElementById('connMsg');
+  box.textContent='連線中…';
+  try{
+    const d=await postToGas('defaults');
+    document.getElementById('year').value=d.year;
+    document.getElementById('month').value=d.month;
+    box.innerHTML='<span class="ok">連線成功</span>｜後端 '+esc(d.version)+'｜目前 '+esc(d.year)+' 年 '+esc(d.month)+' 月';
+  }catch(e){
+    box.innerHTML='<span class="bad">連線失敗</span>｜'+esc(e.message);
+  }
+}
+
+function expectedSheet(type){
+  return {
+    schedule:'結帳',
+    shuru:'淑如時數',
+    hanyuHours:'涵郁時數',
+    hanyuDays:'涵郁天數',
+    patientBonus:'病患工作獎金',
+    staffBonus:'員餐工作獎金'
+  }[type] || '';
+}
+function normalize(v){
+  if(v===null || v===undefined) return '';
+  if(v instanceof Date){
+    const t=v.getTime();
+    if(!Number.isFinite(t)) return '';
+    const p=n=>String(n).padStart(2,'0');
+    return `${v.getFullYear()}-${p(v.getMonth()+1)}-${p(v.getDate())}`;
+  }
+  if(typeof v==='number') return Number.isFinite(v)?v:'';
+  if(['string','boolean'].includes(typeof v)) return v;
+  return String(v);
+}
+function trimMatrix(m){
+  let lr=m.length-1;
+  while(lr>=0 && !(m[lr]||[]).some(v=>String(v??'').trim()!=='')) lr--;
+  const rows=m.slice(0,lr+1);
+  let mc=0;
+  rows.forEach(r=>{ for(let c=(r||[]).length-1;c>=0;c--){if(String(r[c]??'').trim()!==''){mc=Math.max(mc,c+1);break;}}});
+  return rows.map(r=>Array.from({length:mc},(_,i)=>normalize((r||[])[i])));
+}
+function typeChanged(){
+  const t=document.getElementById('type').value;
+  const mode=document.getElementById('importMode');
+  mode.value=t==='schedule'?'replace':mode.value;
+  mode.disabled=t==='schedule';
+  state.preview=null; document.getElementById('commitBtn').disabled=true;
+}
+async function previewExcel(){
+  const f=document.getElementById('file').files[0];
+  const msg=document.getElementById('msg');
+  if(!f){msg.textContent='請先選 Excel。';return;}
+  if(typeof XLSX==='undefined'){msg.textContent='Excel 解析元件載入失敗。';return;}
+  msg.textContent='正在本機解析 Excel…';
+  document.getElementById('commitBtn').disabled=true;
+  try{
+    const buf=await f.arrayBuffer();
+    const wb=XLSX.read(new Uint8Array(buf),{type:'array',cellDates:false,cellNF:true,cellText:true,UTC:false});
+    const t=document.getElementById('type').value;
+    const sn=expectedSheet(t);
+    const ws=wb.Sheets[sn];
+    if(!ws) throw new Error(`找不到工作表「${sn}」。檔案包含：${wb.SheetNames.join('、')}`);
+    const raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:'',blankrows:true});
+    const display=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:'',blankrows:true});
+    const payload={
+      name:f.name,
+      year:Number(document.getElementById('year').value),
+      month:Number(document.getElementById('month').value),
+      type:t,
+      importMode:document.getElementById('importMode').value,
+      workbook:{sheets:{[sn]:{values:trimMatrix(raw),displayValues:trimMatrix(display)}}}
+    };
+    msg.textContent='正在後端檢查姓名、年月、重複資料與欄位…';
+    const r=await postToGas('preview',payload);
+    state.preview=r;
+    renderPreview(r);
+    msg.innerHTML='<span class="ok">預覽完成</span>｜確認內容後再按「確認匯入」。';
+    document.getElementById('commitBtn').disabled=!(r && Array.isArray(r.rows) && r.rows.length);
+  }catch(e){
+    msg.innerHTML='<span class="bad">預覽失敗</span>｜'+esc(e.message);
+  }
+}
+function renderPreview(r){
+  const s=document.getElementById('summary');
+  const p=document.getElementById('preview');
+  if(!r){s.textContent='無資料';p.innerHTML='';return;}
+  s.innerHTML=`可匯入：<b>${esc((r.rows||[]).length)}</b> 筆　異常：<b>${esc((r.errors||[]).length)}</b> 筆`+
+    (r.target?`　目標：<b>${esc(r.target)}</b>`:'');
+  const rows=(r.rows||[]).slice(0,30);
+  if(!rows.length){p.innerHTML='<p>沒有可匯入資料。</p>';return;}
+  const keys=[...new Set(rows.flatMap(x=>Object.keys(x)))].slice(0,12);
+  p.innerHTML='<table><thead><tr>'+keys.map(k=>`<th>${esc(k)}</th>`).join('')+'</tr></thead><tbody>'+
+    rows.map(row=>'<tr>'+keys.map(k=>`<td>${esc(row[k])}</td>`).join('')+'</tr>').join('')+
+    '</tbody></table>'+(r.rows.length>30?'<small>僅顯示前 30 筆。</small>':'');
+}
+async function commitImport(){
+  const r=state.preview;
+  const msg=document.getElementById('msg');
+  if(!r || !Array.isArray(r.rows)){msg.textContent='請先重新預覽。';return;}
+  const payload={
+    year:Number(document.getElementById('year').value),
+    month:Number(document.getElementById('month').value),
+    type:document.getElementById('type').value,
+    importMode:document.getElementById('importMode').value,
+    fileName:document.getElementById('file').files[0]?.name||'',
+    rows:r.rows
+  };
+  document.getElementById('commitBtn').disabled=true;
+  msg.textContent='正在寫入管理表…';
+  try{
+    const result=await postToGas('commit',payload);
+    msg.innerHTML='<span class="ok">匯入完成</span>｜'+esc(result.message||'完成');
+    state.preview=null;
+  }catch(e){
+    msg.innerHTML='<span class="bad">匯入失敗</span>｜'+esc(e.message);
+    document.getElementById('commitBtn').disabled=false;
+  }
+}
+window.addEventListener('DOMContentLoaded',()=>{
+  const saved=localStorage.getItem('xfi_webapp_url');
+  if(saved) document.getElementById('endpoint').value=saved;
+  typeChanged();
+});
+</script>
+</body>
+</html>
