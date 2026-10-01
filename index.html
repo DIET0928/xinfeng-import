@@ -40,7 +40,7 @@
 <body>
 <div class="wrap">
   <h1>欣豐｜外部 Excel 匯入</h1>
-  <div class="sub">主管只需在此頁上傳 Excel；資料預覽後才會寫入「北榮欣豐｜全年自動化管理表」。</div>
+  <div class="sub">主管只需在此頁上傳 Excel；資料預覽後才會寫入「北榮欣豐｜全年自動化管理表」。｜前端 v1.1</div>
 
   <div class="card">
     <div class="title">連線設定</div>
@@ -116,7 +116,7 @@
   </div>
 </div>
 
-<iframe name="gasTarget" id="gasTarget" style="display:none"></iframe>
+<iframe name="gasTarget" id="gasTarget" title="Apps Script response" style="position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;border:0"></iframe>
 
 <script>
 const state = { preview:null, request:null };
@@ -142,15 +142,22 @@ function postToGas(action, payload){
     try { url=endpoint(); code=pin(); } catch(e){ reject(e); return; }
     const rid=requestId();
     const form=document.createElement('form');
-    form.method='POST'; form.action=url; form.target='gasTarget'; form.style.display='none';
+    form.method='POST'; form.action=url; form.target='gasTarget'; form.style.display='none'; form.acceptCharset='UTF-8';
     const fields={action, pin:code, requestId:rid, payload:payload ? JSON.stringify(payload) : ''};
     Object.entries(fields).forEach(([k,v])=>{
       const i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=v; form.appendChild(i);
     });
-    const timer=setTimeout(()=>{ cleanup(); reject(new Error('後端逾時，請確認 Web App 部署網址與存取權限。')); },30000);
+    const timer=setTimeout(()=>{ 
+      cleanup(); 
+      reject(new Error(
+        '後端已可直接開啟，但 GitHub Pages 沒收到回傳。\n' +
+        '請確認 Apps Script 已部署 WEB-1.1 新版本，並重新整理此頁。'
+      )); 
+    },45000);
     function handler(ev){
       const d=ev.data;
       if(!d || d.source!=='xinfeng-import-webapp' || d.requestId!==rid) return;
+      document.getElementById('connMsg').dataset.lastOrigin = ev.origin || '';
       cleanup();
       d.ok ? resolve(d.data) : reject(new Error(d.message || '後端處理失敗'));
     }
