@@ -77,7 +77,7 @@
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>欣豐｜北榮管理中心 <span class="version">前端 v2.0</span></h1>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v2.1</span></h1>
       <div class="subtitle">原 Code.gs 邏輯｜GitHub 主管入口｜Excel 本機解析｜Web App 以管理者權限執行</div>
     </div>
   </div>
@@ -89,6 +89,18 @@
       <button class="primary" onclick="connect()">連線／更新狀態</button>
     </div>
     <div id="connMsg" class="small" style="margin-top:8px">請先輸入 Web App 網址與匯入碼。</div>
+
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+      <div class="label" style="margin-bottom:7px"><b>正式作業月份</b>｜會寫入「設定」B13／B14，並控制首頁、目前月份匯總、待確認與主管確認中心</div>
+      <div class="connectGrid">
+        <input id="workYear" type="number" min="100" max="150" placeholder="民國年度">
+        <select id="workMonth"></select>
+        <button class="secondary" onclick="setWorkingPeriod()">套用正式作業月份</button>
+      </div>
+      <div class="small" style="margin-top:7px">
+        切換前會先保存舊月份待確認中的主管核定；切換月份不會自動抓外部資料，切換後再按「一鍵同步目前月份」。
+      </div>
+    </div>
   </div>
 
   <div class="tabs">
@@ -236,6 +248,10 @@ for(let i=1;i<=12;i++){
   const o=document.createElement('option');
   o.value=i;o.textContent=i+'月';
   document.getElementById('month').appendChild(o);
+
+  const w=document.createElement('option');
+  w.value=i;w.textContent=i+'月';
+  document.getElementById('workMonth').appendChild(w);
 }
 
 const savedEndpoint=localStorage.getItem('xfi_webapp_url');
@@ -369,6 +385,8 @@ async function connect(){
 
     document.getElementById('year').value=d.data.year;
     document.getElementById('month').value=d.data.month;
+    document.getElementById('workYear').value=d.data.year;
+    document.getElementById('workMonth').value=d.data.month;
 
   }catch(e){
     box.innerHTML='<span class="bad">連線失敗</span>｜'+esc(e.message);
@@ -378,6 +396,9 @@ async function connect(){
 function renderDashboard(d){
   dashboardData=d;
   const mm=String(d.month).padStart(2,'0');
+
+  if(document.getElementById('workYear')) document.getElementById('workYear').value=d.year;
+  if(document.getElementById('workMonth')) document.getElementById('workMonth').value=d.month;
 
   document.getElementById('mPeriod').textContent=d.year+'／'+mm;
   document.getElementById('mJournal').textContent=d.journalCount;
@@ -395,6 +416,7 @@ function renderDashboard(d){
 
   const li=d.lastImport;
   document.getElementById('lastStatus').innerHTML=
+    '<b>最近正式月份切換：</b> '+esc(d.lastPeriodChange||'尚未由管理中心切換')+'<br>'+
     '<b>最近完整同步：</b> '+esc(d.lastSync||'尚未由管理中心執行')+'<br>'+
     '<b>最近 Excel 匯入：</b> '+(
       li ? esc([li.time,li.fileName,li.target,li.status].filter(Boolean).join('｜')) : '尚無紀錄'
@@ -469,6 +491,54 @@ function openImportType(type){
   sourceChanged();
   showTabById('import');
   document.getElementById('file').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+
+async function setWorkingPeriod(){
+  const year=Number(document.getElementById('workYear').value);
+  const month=Number(document.getElementById('workMonth').value);
+
+  if(!Number.isInteger(year)||year<100||year>150){
+    alert('民國年度必須是 100～150。');
+    return;
+  }
+  if(!Number.isInteger(month)||month<1||month>12){
+    alert('月份必須是 1～12。');
+    return;
+  }
+
+  const mm=String(month).padStart(2,'0');
+  const ok=confirm(
+    '要把正式作業月份切換成 '+year+' 年 '+mm+' 月嗎？\n\n'+
+    '這會更新「設定」B13／B14，以及首頁、目前月份匯總、待確認、主管確認中心。\n'+
+    '切換前會先保存目前待確認中的主管核定。\n'+
+    '既有各月份資料不會刪除。\n\n'+
+    '切換後如需更新外部來源，再按「一鍵同步目前月份」。'
+  );
+  if(!ok) return;
+
+  const box=document.getElementById('connMsg');
+  box.textContent='正在保存舊月份主管結果並切換正式作業月份…';
+
+  try{
+    const r=await runPost('setWorkingPeriod',{year,month});
+    if(!r||!r.dashboard) throw new Error('後端沒有回傳月份狀態。');
+
+    renderDashboard(r.dashboard);
+
+    document.getElementById('year').value=r.dashboard.year;
+    document.getElementById('month').value=r.dashboard.month;
+    document.getElementById('workYear').value=r.dashboard.year;
+    document.getElementById('workMonth').value=r.dashboard.month;
+
+    box.innerHTML=
+      '<span class="ok"><b>月份切換完成</b></span>｜正式作業月份：'+
+      esc(r.dashboard.year)+' 年 '+esc(String(r.dashboard.month).padStart(2,'0'))+' 月'+
+      '｜下一步可按「一鍵同步目前月份」';
+
+  }catch(e){
+    box.innerHTML='<span class="bad">月份切換失敗</span>｜'+esc(e.message);
+  }
 }
 
 function sourceChanged(){
