@@ -40,7 +40,7 @@
 <body>
 <div class="wrap">
   <h1>欣豐｜外部 Excel 匯入</h1>
-  <div class="sub">主管只需在此頁上傳 Excel；資料預覽後才會寫入「北榮欣豐｜全年自動化管理表」。｜前端 v1.1</div>
+  <div class="sub">主管只需在此頁上傳 Excel；資料預覽後才會寫入「北榮欣豐｜全年自動化管理表」。｜前端 v1.2</div>
 
   <div class="card">
     <div class="title">連線設定</div>
@@ -116,8 +116,6 @@
   </div>
 </div>
 
-<iframe name="gasTarget" id="gasTarget" title="Apps Script response" style="position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;border:0"></iframe>
-
 <script>
 const state = { preview:null, request:null };
 
@@ -127,55 +125,154 @@ function esc(s){
 function requestId(){ return 'r' + Date.now() + '_' + Math.random().toString(36).slice(2); }
 function endpoint(){
   const v = document.getElementById('endpoint').value.trim();
-  if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(v)) throw new Error('請貼上 Apps Script Web App 的 /exec 網址。');
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(v)) {
+    throw new Error('請貼上 Apps Script Web App 的 /exec 網址。');
+  }
   localStorage.setItem('xfi_webapp_url', v);
   return v;
 }
+
 function pin(){
   const v=document.getElementById('pin').value.trim();
   if(!v) throw new Error('請輸入匯入碼。');
   return v;
 }
-function postToGas(action, payload){
+
+function jsonp(url, timeoutMs=15000){
   return new Promise((resolve,reject)=>{
-    let url, code;
-    try { url=endpoint(); code=pin(); } catch(e){ reject(e); return; }
-    const rid=requestId();
-    const form=document.createElement('form');
-    form.method='POST'; form.action=url; form.target='gasTarget'; form.style.display='none'; form.acceptCharset='UTF-8';
-    const fields={action, pin:code, requestId:rid, payload:payload ? JSON.stringify(payload) : ''};
-    Object.entries(fields).forEach(([k,v])=>{
-      const i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=v; form.appendChild(i);
-    });
-    const timer=setTimeout(()=>{ 
-      cleanup(); 
-      reject(new Error(
-        '後端已可直接開啟，但 GitHub Pages 沒收到回傳。\n' +
-        '請確認 Apps Script 已部署 WEB-1.1 新版本，並重新整理此頁。'
-      )); 
-    },45000);
-    function handler(ev){
-      const d=ev.data;
-      if(!d || d.source!=='xinfeng-import-webapp' || d.requestId!==rid) return;
-      document.getElementById('connMsg').dataset.lastOrigin = ev.origin || '';
+    const cb='xfi_cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    const s=document.createElement('script');
+    let timer;
+
+    window[cb]=data=>{
       cleanup();
-      d.ok ? resolve(d.data) : reject(new Error(d.message || '後端處理失敗'));
+      resolve(data);
+    };
+
+    function cleanup(){
+      clearTimeout(timer);
+      try{delete window[cb];}catch(e){window[cb]=undefined;}
+      s.remove();
     }
-    function cleanup(){ clearTimeout(timer); window.removeEventListener('message',handler); form.remove(); }
-    window.addEventListener('message',handler);
-    document.body.appendChild(form); form.submit();
+
+    s.onerror=()=>{
+      cleanup();
+      reject(new Error('無法讀取 Apps Script Web App 回傳。'));
+    };
+
+    timer=setTimeout(()=>{
+      cleanup();
+      reject(new Error('Apps Script JSONP 回傳逾時。'));
+    },timeoutMs);
+
+    const sep=url.includes('?')?'&':'?';
+    s.src=url+sep+'callback='+encodeURIComponent(cb)+'&_='+Date.now();
+    document.head.appendChild(s);
   });
 }
+
+async function getDefaults(){
+  const url=endpoint()+
+    '?action=defaults&pin='+encodeURIComponent(pin());
+  const r=await jsonp(url);
+  if(!r || !r.ok) throw new Error((r&&r.message)||'讀取目前月份失敗。');
+  return r;
+}
+
+function postForm(action, payload, rid){
+  let url, code;
+  url=endpoint();
+  code=pin();
+
+  const iframe=document.createElement('iframe');
+  iframe.name='xfi_post_'+rid;
+  iframe.style.position='absolute';
+  iframe.style.width='1px';
+  iframe.style.height='1px';
+  iframe.style.left='-9999px';
+  iframe.style.top='-9999px';
+  iframe.style.border='0';
+
+  const form=document.createElement('form');
+  form.method='POST';
+  form.action=url;
+  form.target=iframe.name;
+  form.style.display='none';
+  form.acceptCharset='UTF-8';
+
+  const fields={
+    action,
+    pin:code,
+    requestId:rid,
+    payload:JSON.stringify(payload||{})
+  };
+
+  Object.entries(fields).forEach(([k,v])=>{
+    const i=document.createElement('input');
+    i.type='hidden'; i.name=k; i.value=v;
+    form.appendChild(i);
+  });
+
+  document.body.appendChild(iframe);
+  document.body.appendChild(form);
+  form.submit();
+
+  setTimeout(()=>{ form.remove(); },1000);
+  setTimeout(()=>{ iframe.remove(); },120000);
+}
+
+async function pollResult(rid, maxMs=90000){
+  const started=Date.now();
+
+  while(Date.now()-started < maxMs){
+    const url=endpoint()+
+      '?action=result'+
+      '&requestId='+encodeURIComponent(rid)+
+      '&pin='+encodeURIComponent(pin());
+
+    const r=await jsonp(url,15000);
+
+    if(!r || !r.ok){
+      throw new Error((r&&r.message)||'讀取後端結果失敗。');
+    }
+
+    if(!r.pending){
+      const result=r.result;
+      if(!result || !result.ok){
+        throw new Error((result&&result.message)||'後端處理失敗。');
+      }
+      return result.data;
+    }
+
+    await new Promise(res=>setTimeout(res,1000));
+  }
+
+  throw new Error('後端處理逾時（90 秒）。');
+}
+
+async function postToGas(action,payload){
+  const rid=requestId();
+  postForm(action,payload,rid);
+  return await pollResult(rid);
+}
+
 async function loadDefaults(){
   const box=document.getElementById('connMsg');
   box.textContent='連線中…';
+
   try{
-    const d=await postToGas('defaults');
+    const d=await getDefaults();
     document.getElementById('year').value=d.year;
     document.getElementById('month').value=d.month;
-    box.innerHTML='<span class="ok">連線成功</span>｜後端 '+esc(d.version)+'｜目前 '+esc(d.year)+' 年 '+esc(d.month)+' 月';
+
+    box.innerHTML=
+      '<span class="ok">連線成功</span>｜後端 '+
+      esc(d.version)+
+      '｜目前 '+esc(d.year)+' 年 '+esc(d.month)+' 月';
+
   }catch(e){
-    box.innerHTML='<span class="bad">連線失敗</span>｜'+esc(e.message);
+    box.innerHTML=
+      '<span class="bad">連線失敗</span>｜'+esc(e.message);
   }
 }
 
