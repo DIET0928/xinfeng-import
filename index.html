@@ -629,8 +629,11 @@ function renderPreview(r){
   document.getElementById('commitBtn').disabled=r.valid===0;
 
   const rows=r.rows.slice(0,100);
+  // 員餐差勤（涵郁）為每月彙總，第一個日期欄顯示實際匯入日期。
+  // 其他類別仍顯示事件／工作日期。
+  const dateHeader = r.type==='hanyuDays' ? '匯入日期' : '日期';
   let h='<div class="tableWrap"><table><thead><tr>'+
-    '<th>原列</th><th>日期</th><th>姓名</th><th>工作／代碼</th>'+
+    '<th>原列</th><th>'+dateHeader+'</th><th>姓名</th><th>工作／代碼</th>'+
     '<th>事件分類</th><th>時數／點數</th><th>單位</th><th>狀態</th><th>備註</th></tr></thead><tbody>';
 
   rows.forEach(x=>{
