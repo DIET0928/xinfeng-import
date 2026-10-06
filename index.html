@@ -183,11 +183,11 @@
       <div class="importGrid">
         <div>
           <label>民國年度</label>
-          <input id="year" type="number" min="100" max="150">
+          <input id="year" type="number" min="100" max="150" onchange="invalidatePeriodPreview()">
         </div>
         <div>
           <label>月份</label>
-          <select id="month"></select>
+          <select id="month" onchange="invalidatePeriodPreview()"></select>
         </div>
 
         <div class="wide">
@@ -583,6 +583,15 @@ async function excelWorkbookPayload(file,type){
   return {sheets:{[sheetName]:{values,displayValues}}};
 }
 
+function invalidatePeriodPreview(){
+  if(!previewResult) return;
+  previewResult=null;
+  document.getElementById('commitBtn').disabled=true;
+  document.getElementById('previewArea').innerHTML='';
+  document.getElementById('importMsg').innerHTML=
+    '<span class="warn">已修改匯入年月，請重新按「預覽與檢查」，確保日期與目的月份一致。</span>';
+}
+
 async function previewImport(){
   const f=document.getElementById('file').files[0];
   if(!f){
@@ -626,7 +635,16 @@ function renderPreview(r){
     '<span class="bad">異常 '+esc(r.invalid)+'</span>；'+
     '<span class="warn">重複 '+esc(r.duplicate)+'</span>';
 
-  document.getElementById('commitBtn').disabled=r.valid===0;
+  const monthWarnings=Array.isArray(r.monthWarnings)?r.monthWarnings:[];
+  const mismatch=!!r.monthMismatch;
+  if(mismatch){
+    const notice=monthWarnings.length?monthWarnings.join('；'):
+      '⚠ 選擇的月份與來源工作日期不一致，請改選正確月份並重新預覽';
+    document.getElementById('importMsg').innerHTML+=
+      '<div class="bad" style="margin-top:10px;font-weight:bold">'+esc(notice)+'</div>';
+    alert(notice);
+  }
+  document.getElementById('commitBtn').disabled=r.valid===0||mismatch;
 
   const rows=r.rows.slice(0,100);
   // 員餐差勤（涵郁）為每月彙總，第一個日期欄顯示實際匯入日期。
