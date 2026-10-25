@@ -753,38 +753,86 @@ function clearImport(){
   document.getElementById('importMsg').textContent='請選 Excel，再按「預覽與檢查」。';
 }
 
-async function downloadJournalTemplate(type){
+function downloadJournalTemplate(type){
   if(type!=='zhenJournal'&&type!=='xuanJournal'){
     alert('目前只有溱日誌與軒日誌提供填寫範本。');
     return;
   }
 
-  if(!dashboardData){
-    alert('請先連線／更新狀態。');
+  if(!window.XLSX){
+    alert('Excel 產生元件尚未載入，請重新整理頁面後再試。');
     return;
   }
 
-  const popup=window.open('about:blank','_blank');
+  const year = dashboardData
+    ? Number(dashboardData.year)
+    : Number(document.getElementById('year').value);
+
+  const month = dashboardData
+    ? Number(dashboardData.month)
+    : Number(document.getElementById('month').value);
+
+  if(!Number.isInteger(year)||year<100||year>150){
+    alert('請先連線／更新狀態，或確認民國年度。');
+    return;
+  }
+
+  if(!Number.isInteger(month)||month<1||month>12){
+    alert('請先連線／更新狀態，或確認月份。');
+    return;
+  }
+
+  const info = type==='xuanJournal'
+    ? {
+        sheetName:'軒日誌',
+        label:'軒日誌',
+        categories:'純紀錄、其他、加點、扣點、額外加班、計時、遲到、專業獎勵'
+      }
+    : {
+        sheetName:'溱日誌',
+        label:'溱日誌',
+        categories:'純紀錄、其他、加點、扣點、額外加班、計時、遲到'
+      };
+
+  const mm=String(month).padStart(2,'0');
+
+  const rows=[
+    ['欣豐｜'+mm+'月'+info.label+'填寫範本｜民國'+year+'年'+mm+'月'],
+    ['第4列開始填寫。日期填事件實際發生日期；姓名可填正式姓名或員工名冊中的綽號；事件分類可填：'+info.categories+'。加點／扣點請填數值及「點」；額外加班／計時可直接填時數及「hr」，或填開始時間與結束時間。'],
+    ['日期','姓名／綽號','工作代碼','事件分類','原始記事','數值','單位','開始時間','結束時間']
+  ];
+
+  for(let r=0;r<300;r++){
+    rows.push(['','','','','','','','','']);
+  }
+
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!merges']=[
+    XLSX.utils.decode_range('A1:I1'),
+    XLSX.utils.decode_range('A2:I2')
+  ];
+  ws['!cols']=[
+    {wch:13},{wch:16},{wch:15},{wch:15},{wch:48},
+    {wch:10},{wch:10},{wch:13},{wch:13}
+  ];
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,info.sheetName);
+
+  const fileName=
+    '欣豐_北榮_'+info.label+'_地端填寫範本_'+year+'年'+mm+'月.xlsx';
+
   try{
-    const r=await runPost('createJournalTemplate',{
-      type,
-      year:Number(dashboardData.year),
-      month:Number(dashboardData.month)
-    });
-
-    if(!r||!r.downloadUrl) throw new Error('後端沒有回傳下載網址。');
-
-    if(popup) popup.location.href=r.downloadUrl;
+    XLSX.writeFile(wb,fileName);
 
     const box=document.getElementById('syncMsg');
     if(box){
-      box.innerHTML='<span class="ok"><b>'+esc(r.sheetName)+'範本已產生</b></span>｜'+
-        '<a href="'+esc(r.downloadUrl)+'" target="_blank" rel="noopener">點此下載 '+esc(r.fileName)+'</a>'+
-        '<br><span class="small">Excel 內分頁名稱已固定為「'+esc(r.sheetName)+'」。</span>';
+      box.innerHTML=
+        '<span class="ok"><b>'+esc(info.label)+'範本已下載</b></span>｜'+
+        'Excel 分頁名稱固定為「'+esc(info.sheetName)+'」。填寫完成後可直接回來匯入。';
     }
   }catch(e){
-    if(popup) popup.close();
-    alert('範本產生失敗：'+e.message);
+    alert('範本下載失敗：'+e.message);
   }
 }
 
