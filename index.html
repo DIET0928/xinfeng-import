@@ -1,13 +1,757 @@
-/* =========================================================
- * GitHub 前端（原版）｜downloadJournalTemplate 替換版
- * 用法：在原版 index.html 找到 function downloadJournalTemplate(type){ … }
- *       整段刪除，貼上下方兩個函式。其他程式與版面不需更動。
- * 修正：
- * 1. 不用 XLSX.writeFile，下載連結保留 10 分鐘再釋放，
- *    避免 Chrome 出現「無法在網站上擷取檔案」。
- * 2. 溱日誌、軒日誌的事件分類與後端解析器一致。
- * 3. 若下載未開始，syncMsg 會顯示手動下載連結。
- * ========================================================= */
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>欣豐｜北榮管理中心</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    :root{
+      --bg:#f6f2ef; --card:#fff; --ink:#392f2a; --muted:#756760;
+      --line:#ded4ce; --brand:#8b6f5e; --brand2:#6f5649;
+      --ok:#237642; --warn:#9a6500; --bad:#a23131;
+      --soft:#eee5df; --gold:#d8b85f; --green:#84a98c; --blue:#82a9ce;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,"Microsoft JhengHei",sans-serif}
+    .wrap{max-width:1180px;margin:auto;padding:20px}
+    .top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+    h1{font-size:28px;margin:0 0 6px}
+    .subtitle{color:var(--muted);font-size:14px}
+    .version{display:inline-block;padding:4px 8px;border-radius:999px;background:#e9dfd9;font-size:12px;margin-left:8px}
+    .connect{margin-top:16px;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:12px}
+    .connectGrid{display:grid;grid-template-columns:2fr 1fr auto;gap:10px}
+    input,select{width:100%;padding:10px 11px;border:1px solid #cfc4bd;border-radius:8px;background:#fff;font:inherit}
+    button,.btn{border:0;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+    button:disabled{opacity:.45;cursor:not-allowed}
+    .primary{background:var(--brand);color:#fff}
+    .primary:hover{background:var(--brand2)}
+    .secondary{background:var(--soft);color:var(--ink)}
+    .danger{background:#f4dddd;color:#7b2727}
+    .tabs{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap}
+    .tab{background:#e8dfda;color:#51433c}
+    .tab.active{background:var(--brand);color:#fff}
+    .panel{display:none}.panel.active{display:block}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px}
+    .metric{font-size:30px;font-weight:800;margin-top:4px}
+    .label{font-size:13px;color:var(--muted)}
+    .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+    .sectionTitle{font-size:18px;margin:22px 0 10px}
+    .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .quick button,.quick a{min-height:54px}
+    .sourceGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .sourceCard{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px}
+    .sourceName{font-weight:800}
+    .sourceMeta{margin:6px 0 10px;color:var(--muted);font-size:13px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .notice{padding:12px 14px;border-radius:10px;background:#fff8e4;border:1px solid #ead79a;margin-top:12px}
+    .msg{padding:12px 14px;border-radius:10px;background:#fff;border:1px solid var(--line);margin-top:12px;white-space:pre-wrap}
+    .importGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .wide{grid-column:1/-1}
+    label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}
+    .tableWrap{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:10px;margin-top:12px;background:#fff}
+    table{border-collapse:collapse;width:100%;font-size:12px}
+    th,td{padding:7px 8px;border-bottom:1px solid #ece5e0;text-align:left;vertical-align:top;white-space:nowrap}
+    th{position:sticky;top:0;background:#eee6f2;z-index:1}
+    td.long{white-space:normal;min-width:220px}
+    .linkGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+    .linkBtn{background:#fff;border:1px solid var(--line);color:var(--ink);padding:11px;border-radius:9px;text-decoration:none;font-weight:700}
+    .linkBtn:hover{background:#f1ebe7}
+    .small{font-size:12px;color:var(--muted)}
+    .loading{opacity:.65;pointer-events:none}
+    @media(max-width:900px){
+      .grid,.quick{grid-template-columns:repeat(2,1fr)}
+      .sourceGrid,.linkGrid{grid-template-columns:repeat(2,1fr)}
+      .connectGrid{grid-template-columns:1fr}
+    }
+    @media(max-width:560px){
+      .grid,.quick,.sourceGrid,.linkGrid,.importGrid{grid-template-columns:1fr}
+      .wrap{padding:13px}
+      h1{font-size:23px}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v2.3</span></h1>
+      <div class="subtitle">原 Code.gs 邏輯｜GitHub 主管入口｜Excel 本機解析｜Web App 以管理者權限執行</div>
+    </div>
+  </div>
+
+  <div class="connect">
+    <div class="connectGrid">
+      <input id="endpoint" placeholder="Apps Script Web App /exec 網址">
+      <input id="pin" type="password" autocomplete="off" placeholder="匯入碼">
+      <button class="primary" onclick="connect()">連線／更新狀態</button>
+    </div>
+    <div id="connMsg" class="small" style="margin-top:8px">請先輸入 Web App 網址與匯入碼。</div>
+
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+      <div class="label" style="margin-bottom:7px"><b>正式作業月份</b>｜會寫入「設定」B13／B14，並控制首頁、目前月份匯總、待確認與主管確認中心</div>
+      <div class="connectGrid">
+        <input id="workYear" type="number" min="100" max="150" placeholder="民國年度">
+        <select id="workMonth"></select>
+        <button class="secondary" onclick="setWorkingPeriod()">套用正式作業月份</button>
+      </div>
+      <div class="small" style="margin-top:7px">
+        切換前會先保存舊月份待確認中的主管核定；切換月份不會自動抓外部資料，切換後再按「一鍵同步目前月份」。
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('dashboard',this)">總覽</button>
+    <button class="tab" onclick="showTab('import',this)">外部 Excel 匯入</button>
+    <button class="tab" onclick="showTab('links',this)">全部入口</button>
+  </div>
+
+  <section id="dashboard" class="panel active">
+    <div class="grid">
+      <div class="card"><div class="label">目前作業月份</div><div class="metric" id="mPeriod">—</div></div>
+      <div class="card"><div class="label">本月日誌</div><div class="metric" id="mJournal">—</div></div>
+      <div class="card"><div class="label">待主管確認</div><div class="metric" id="mPending">—</div></div>
+      <div class="card"><div class="label">待確認警示</div><div class="metric" id="mWarn">—</div></div>
+    </div>
+
+    <div class="sectionTitle">常用操作</div>
+    <div class="quick">
+      <button class="primary" onclick="runAction('syncCurrentMonth')">一鍵同步目前月份</button>
+      <button class="secondary" onclick="showTabById('import')">外部 Excel 匯入</button>
+      <a class="btn secondary dynLink" data-sheet="待確認" target="_blank">開啟待確認</a>
+      <a class="btn secondary dynLink" data-sheet="月結薪資" target="_blank">開啟月結薪資</a>
+    </div>
+
+    <div id="syncMsg" class="msg">連線後可直接同步荃荃／溱／軒／抽檢／營養師／淑如／涵郁，計算仍使用原本 Code.gs。</div>
+
+    <div class="sectionTitle">本月來源</div>
+    <div class="sourceGrid">
+      <div class="sourceCard">
+        <div class="sourceName">溱日誌－溱</div><div class="sourceMeta" id="cZhen">—</div>
+        <div class="actions">
+          <button class="secondary" onclick="downloadJournalTemplate('zhenJournal')">下載填寫範本</button>
+          <button class="secondary" onclick="openImportType('zhenJournal')">匯入</button>
+          <a class="btn secondary dynLink" data-sheet-template="{mm}月溱日誌" target="_blank">開啟</a>
+        </div>
+      </div>
+      <div class="sourceCard">
+        <div class="sourceName">軒日誌－明軒</div><div class="sourceMeta" id="cXuan">—</div>
+        <div class="actions">
+          <button class="secondary" onclick="downloadJournalTemplate('xuanJournal')">下載填寫範本</button>
+          <button class="secondary" onclick="openImportType('xuanJournal')">匯入</button>
+          <a class="btn secondary dynLink" data-sheet-template="{mm}月軒日誌" target="_blank">開啟</a>
+        </div>
+      </div>
+      <div class="sourceCard">
+        <div class="sourceName">荃荃記事本／抽檢</div><div class="sourceMeta">由一鍵同步以管理者權限讀取</div>
+        <button class="secondary" onclick="runAction('syncCurrentMonth')">立即同步</button>
+      </div>
+      <div class="sourceCard">
+        <div class="sourceName">病患班表－明軒</div><div class="sourceMeta" id="cSchedule">—</div>
+        <button class="secondary" onclick="openImportType('schedule')">匯入</button>
+      </div>
+      <div class="sourceCard">
+        <div class="sourceName">病患加班－淑如</div><div class="sourceMeta" id="cShuru">—</div>
+        <button class="secondary" onclick="openImportType('shuru')">匯入</button>
+      </div>
+      <div class="sourceCard">
+        <div class="sourceName">員餐加班－涵郁</div><div class="sourceMeta" id="cHanyuHours">—</div>
+        <button class="secondary" onclick="openImportType('hanyuHours')">匯入</button>
+      </div>
+      <div class="sourceCard">
+        <div class="sourceName">員餐差勤－涵郁</div><div class="sourceMeta" id="cHanyuDays">—</div>
+        <button class="secondary" onclick="openImportType('hanyuDays')">匯入</button>
+      </div>
+      <div class="sourceCard">
+        <div class="sourceName">病患獎金－營養師</div><div class="sourceMeta" id="cPatientBonus">—</div>
+        <button class="secondary" onclick="openImportType('patientBonus')">匯入</button>
+      </div>
+      <div class="sourceCard">
+        <div class="sourceName">員餐獎金－營養師</div><div class="sourceMeta" id="cStaffBonus">—</div>
+        <button class="secondary" onclick="openImportType('staffBonus')">匯入</button>
+      </div>
+    </div>
+
+    <div class="sectionTitle">最近狀態</div>
+    <div class="card">
+      <div id="lastStatus">尚未讀取。</div>
+    </div>
+  </section>
+
+  <section id="import" class="panel">
+    <div class="card">
+      <div class="sectionTitle" style="margin-top:0">外部 Excel 匯入</div>
+      <div class="importGrid">
+        <div>
+          <label>民國年度</label>
+          <input id="year" type="number" min="100" max="150" onchange="invalidatePeriodPreview()">
+        </div>
+        <div>
+          <label>月份</label>
+          <select id="month" onchange="invalidatePeriodPreview()"></select>
+        </div>
+
+        <div class="wide">
+          <label>資料來源</label>
+          <select id="type" onchange="sourceChanged()">
+            <option value="zhenJournal">溱日誌－溱</option>
+            <option value="xuanJournal">軒日誌－明軒</option>
+            <option value="schedule">病患班表－明軒</option>
+            <option value="shuru">病患加班－淑如</option>
+            <option value="hanyuHours">員餐加班－涵郁</option>
+            <option value="hanyuDays">員餐差勤－涵郁</option>
+            <option value="patientBonus">病患獎金－營養師</option>
+            <option value="staffBonus">員餐獎金－營養師</option>
+          </select>
+        </div>
+
+        <div class="wide">
+          <div id="sheetHint" class="notice" style="margin-top:0"></div>
+        </div>
+
+        <div class="wide">
+          <label>再次匯入處理方式</label>
+          <select id="importMode">
+            <option value="replace" selected>取代本月同來源舊資料（建議）</option>
+            <option value="append">只新增新資料</option>
+          </select>
+          <div class="small" style="margin-top:5px">班表固定採取代；其他來源可選取代或只新增。取代只清來源輸入欄，不清公式欄。</div>
+        </div>
+
+        <div class="wide">
+          <label>Excel 檔案</label>
+          <input id="file" type="file" accept=".xlsx,.xls">
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top:14px">
+        <button class="primary" id="previewBtn" onclick="previewImport()">預覽與檢查</button>
+        <button class="primary" id="commitBtn" onclick="commitImport()" disabled>確認匯入</button>
+        <button class="secondary" onclick="clearImport()">清除</button>
+      </div>
+
+      <div id="importMsg" class="msg">請選 Excel，再按「預覽與檢查」。</div>
+      <div id="previewArea"></div>
+    </div>
+  </section>
+
+  <section id="links" class="panel">
+    <div class="sectionTitle">全部常用入口</div>
+    <div id="linkGrid" class="linkGrid"></div>
+    <div class="notice">GitHub 只負責入口與操作；試算表公式、日誌、待確認、班表、薪資、新人等規則仍全部由原 Code.gs 執行。</div>
+  </section>
+</div>
+
+<script>
+const SOURCE_SHEET = {
+  zhenJournal:'溱日誌',
+  xuanJournal:'軒日誌',
+  schedule:'結帳',
+  shuru:'淑如時數',
+  hanyuHours:'涵郁時數',
+  hanyuDays:'涵郁天數',
+  patientBonus:'病患工作獎金',
+  staffBonus:'員餐工作獎金'
+};
+
+let dashboardData = null;
+let previewResult = null;
+
+for(let i=1;i<=12;i++){
+  const o=document.createElement('option');
+  o.value=i;o.textContent=i+'月';
+  document.getElementById('month').appendChild(o);
+
+  const w=document.createElement('option');
+  w.value=i;w.textContent=i+'月';
+  document.getElementById('workMonth').appendChild(w);
+}
+
+const savedEndpoint=localStorage.getItem('xfi_webapp_url');
+if(savedEndpoint) document.getElementById('endpoint').value=savedEndpoint;
+
+function esc(s){
+  return String(s??'').replace(/[&<>"']/g,m=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[m]));
+}
+
+function endpoint(){
+  const v=document.getElementById('endpoint').value.trim();
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(v)){
+    throw new Error('請貼上 Apps Script Web App 的 /exec 網址。');
+  }
+  localStorage.setItem('xfi_webapp_url',v);
+  return v;
+}
+
+function pin(){
+  const v=document.getElementById('pin').value.trim();
+  if(!v) throw new Error('請輸入匯入碼。');
+  return v;
+}
+
+function requestId(){
+  return 'r'+Date.now()+'_'+Math.random().toString(36).slice(2);
+}
+
+function jsonp(url,timeoutMs=20000){
+  return new Promise((resolve,reject)=>{
+    const cb='xfm_cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    const s=document.createElement('script');
+    let timer;
+
+    window[cb]=data=>{ cleanup(); resolve(data); };
+
+    function cleanup(){
+      clearTimeout(timer);
+      try{delete window[cb];}catch(e){window[cb]=undefined;}
+      s.remove();
+    }
+
+    s.onerror=()=>{ cleanup(); reject(new Error('無法讀取 Apps Script Web App 回傳。')); };
+    timer=setTimeout(()=>{ cleanup(); reject(new Error('Apps Script 回傳逾時。')); },timeoutMs);
+
+    const sep=url.includes('?')?'&':'?';
+    s.src=url+sep+'callback='+encodeURIComponent(cb)+'&_='+Date.now();
+    document.head.appendChild(s);
+  });
+}
+
+function postForm(action,payload,rid){
+  const iframe=document.createElement('iframe');
+  iframe.name='xfm_post_'+rid;
+  iframe.style.cssText='position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;border:0';
+
+  const form=document.createElement('form');
+  form.method='POST';
+  form.action=endpoint();
+  form.target=iframe.name;
+  form.style.display='none';
+  form.acceptCharset='UTF-8';
+
+  const fields={
+    action,
+    pin:pin(),
+    requestId:rid,
+    payload:JSON.stringify(payload||{})
+  };
+
+  Object.entries(fields).forEach(([k,v])=>{
+    const i=document.createElement('input');
+    i.type='hidden';i.name=k;i.value=v;
+    form.appendChild(i);
+  });
+
+  document.body.appendChild(iframe);
+  document.body.appendChild(form);
+  form.submit();
+
+  setTimeout(()=>form.remove(),1000);
+  setTimeout(()=>iframe.remove(),300000);
+}
+
+async function pollResult(rid,maxMs=240000){
+  const started=Date.now();
+
+  while(Date.now()-started<maxMs){
+    const url=endpoint()+
+      '?action=result&requestId='+encodeURIComponent(rid)+
+      '&pin='+encodeURIComponent(pin());
+
+    const r=await jsonp(url,20000);
+    if(!r||!r.ok) throw new Error((r&&r.message)||'讀取後端結果失敗。');
+
+    if(!r.pending){
+      const result=r.result;
+      if(!result||!result.ok) throw new Error((result&&result.message)||'後端處理失敗。');
+      return result.data;
+    }
+
+    await new Promise(res=>setTimeout(res,1500));
+  }
+
+  throw new Error('後端處理逾時（240 秒）。');
+}
+
+async function runPost(action,payload={}){
+  const rid=requestId();
+  postForm(action,payload,rid);
+  return await pollResult(rid);
+}
+
+async function connect(){
+  const box=document.getElementById('connMsg');
+  box.textContent='連線中…';
+
+  try{
+    const d=await jsonp(
+      endpoint()+'?action=dashboard&pin='+encodeURIComponent(pin())
+    );
+    if(!d||!d.ok) throw new Error((d&&d.message)||'連線失敗。');
+
+    dashboardData=d.data;
+    renderDashboard(d.data);
+
+    box.innerHTML='<span class="ok">連線成功</span>｜後端 '+esc(d.data.version)+
+      '｜目前 '+esc(d.data.year)+' 年 '+esc(String(d.data.month).padStart(2,'0'))+' 月';
+
+    document.getElementById('year').value=d.data.year;
+    document.getElementById('month').value=d.data.month;
+    document.getElementById('workYear').value=d.data.year;
+    document.getElementById('workMonth').value=d.data.month;
+
+  }catch(e){
+    box.innerHTML='<span class="bad">連線失敗</span>｜'+esc(e.message);
+  }
+}
+
+function renderDashboard(d){
+  dashboardData=d;
+  const mm=String(d.month).padStart(2,'0');
+
+  if(document.getElementById('workYear')) document.getElementById('workYear').value=d.year;
+  if(document.getElementById('workMonth')) document.getElementById('workMonth').value=d.month;
+
+  document.getElementById('mPeriod').textContent=d.year+'／'+mm;
+  document.getElementById('mJournal').textContent=d.journalCount;
+  document.getElementById('mPending').textContent=d.pendingCount;
+  document.getElementById('mWarn').textContent=d.pendingWarnings;
+
+  document.getElementById('cZhen').textContent=(d.sourceCounts.zhen||0)+' 筆';
+  document.getElementById('cXuan').textContent=(d.sourceCounts.xuan||0)+' 筆';
+  document.getElementById('cSchedule').textContent=(d.sourceCounts.schedule||0)+' 人';
+  document.getElementById('cShuru').textContent=(d.sourceCounts.shuru||0)+' 筆';
+  document.getElementById('cHanyuHours').textContent=(d.sourceCounts.hanyuHours||0)+' 筆';
+  document.getElementById('cHanyuDays').textContent=(d.sourceCounts.hanyuDays||0)+' 人';
+  document.getElementById('cPatientBonus').textContent=(d.sourceCounts.patientBonus||0)+' 筆';
+  document.getElementById('cStaffBonus').textContent=(d.sourceCounts.staffBonus||0)+' 筆';
+
+  const li=d.lastImport;
+  document.getElementById('lastStatus').innerHTML=
+    '<b>最近正式月份切換：</b> '+esc(d.lastPeriodChange||'尚未由管理中心切換')+'<br>'+
+    '<b>最近完整同步：</b> '+esc(d.lastSync||'尚未由管理中心執行')+'<br>'+
+    '<b>最近 Excel 匯入：</b> '+(
+      li ? esc([li.time,li.fileName,li.target,li.status].filter(Boolean).join('｜')) : '尚無紀錄'
+    );
+
+  bindDynamicLinks(d);
+  renderAllLinks(d);
+}
+
+function bindDynamicLinks(d){
+  const mm=String(d.month).padStart(2,'0');
+
+  document.querySelectorAll('.dynLink').forEach(a=>{
+    let name=a.dataset.sheet||'';
+    if(a.dataset.sheetTemplate) name=a.dataset.sheetTemplate.replace('{mm}',mm);
+
+    const url=d.links&&d.links[name];
+    if(url){
+      a.href=url;
+      a.style.pointerEvents='';
+      a.style.opacity='';
+    }else{
+      a.removeAttribute('href');
+      a.style.pointerEvents='none';
+      a.style.opacity='.45';
+    }
+  });
+}
+
+function renderAllLinks(d){
+  const preferred=[
+    '首頁','目前月份匯總','待確認','主管確認中心','C支援差勤調整','月結薪資',
+    d.monthText+'月日誌彙總',d.monthText+'月溱日誌',d.monthText+'月軒日誌',
+    '班表'+d.monthText+'月','班表位置統計','固定加班1.334','工作代碼','員工名冊',
+    d.monthText+'月病患加班(淑如)',d.monthText+'月員餐加班(涵郁)',
+    d.monthText+'月員餐差勤(涵郁)',d.monthText+'月病患獎金(營養師)',
+    d.monthText+'月員餐獎金(營養師)',
+    '新人資料清冊','新人報到操作流程','外部資料匯入中心','使用者指南','角色分工導航','設定'
+  ];
+
+  const grid=document.getElementById('linkGrid');
+  grid.innerHTML='';
+
+  preferred.forEach(name=>{
+    const url=d.links&&d.links[name];
+    if(!url) return;
+
+    const a=document.createElement('a');
+    a.className='linkBtn';
+    a.target='_blank';
+    a.href=url;
+    a.textContent=name;
+    grid.appendChild(a);
+  });
+}
+
+function showTab(id,btn){
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+
+function showTabById(id){
+  const tabs=[...document.querySelectorAll('.tab')];
+  const map={dashboard:0,import:1,links:2};
+  showTab(id,tabs[map[id]]);
+}
+
+function openImportType(type){
+  document.getElementById('type').value=type;
+  sourceChanged();
+  showTabById('import');
+  document.getElementById('file').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+
+async function setWorkingPeriod(){
+  const year=Number(document.getElementById('workYear').value);
+  const month=Number(document.getElementById('workMonth').value);
+
+  if(!Number.isInteger(year)||year<100||year>150){
+    alert('民國年度必須是 100～150。');
+    return;
+  }
+  if(!Number.isInteger(month)||month<1||month>12){
+    alert('月份必須是 1～12。');
+    return;
+  }
+
+  const mm=String(month).padStart(2,'0');
+  const ok=confirm(
+    '要把正式作業月份切換成 '+year+' 年 '+mm+' 月嗎？\n\n'+
+    '這會更新「設定」B13／B14，以及首頁、目前月份匯總、待確認、主管確認中心。\n'+
+    '切換前會先保存目前待確認中的主管核定。\n'+
+    '既有各月份資料不會刪除。\n\n'+
+    '切換後如需更新外部來源，再按「一鍵同步目前月份」。'
+  );
+  if(!ok) return;
+
+  const box=document.getElementById('connMsg');
+  box.textContent='正在保存舊月份主管結果並切換正式作業月份…';
+
+  try{
+    const r=await runPost('setWorkingPeriod',{year,month});
+    if(!r||!r.dashboard) throw new Error('後端沒有回傳月份狀態。');
+
+    renderDashboard(r.dashboard);
+
+    document.getElementById('year').value=r.dashboard.year;
+    document.getElementById('month').value=r.dashboard.month;
+    document.getElementById('workYear').value=r.dashboard.year;
+    document.getElementById('workMonth').value=r.dashboard.month;
+
+    box.innerHTML=
+      '<span class="ok"><b>月份切換完成</b></span>｜正式作業月份：'+
+      esc(r.dashboard.year)+' 年 '+esc(String(r.dashboard.month).padStart(2,'0'))+' 月'+
+      '｜下一步可按「一鍵同步目前月份」';
+
+  }catch(e){
+    box.innerHTML='<span class="bad">月份切換失敗</span>｜'+esc(e.message);
+  }
+}
+
+function sourceChanged(){
+  const type=document.getElementById('type').value;
+  const mode=document.getElementById('importMode');
+
+  if(type==='schedule'){
+    mode.value='replace';
+    mode.disabled=true;
+  }else{
+    mode.disabled=false;
+  }
+
+  const sheetName=SOURCE_SHEET[type]||'';
+  const hint=document.getElementById('sheetHint');
+  if(hint){
+    hint.innerHTML='<b>Excel 必須包含的分頁名稱：</b>「'+esc(sheetName)+'」<br>'+
+      '<span class="small">檔名可以不同，但 Excel 內分頁名稱必須完全一致。</span>';
+  }
+
+  previewResult=null;
+  document.getElementById('commitBtn').disabled=true;
+  document.getElementById('previewArea').innerHTML='';
+}
+
+async function excelWorkbookPayload(file,type){
+  if(!window.XLSX) throw new Error('SheetJS 尚未載入，請確認網路後重新整理。');
+
+  const sheetName=SOURCE_SHEET[type];
+  const buf=await file.arrayBuffer();
+  const wb=XLSX.read(buf,{type:'array'});
+  const ws=wb.Sheets[sheetName];
+
+  if(!ws) throw new Error(
+    'Excel 內找不到工作表「'+sheetName+'」。\n\n'+
+    '請把 Excel 分頁名稱改成「'+sheetName+'」後再匯入。'
+  );
+
+  const values=XLSX.utils.sheet_to_json(ws,{
+    header:1,defval:'',raw:true,blankrows:true
+  });
+  const displayValues=XLSX.utils.sheet_to_json(ws,{
+    header:1,defval:'',raw:false,blankrows:true,dateNF:'m/d/yyyy'
+  });
+
+  return {sheets:{[sheetName]:{values,displayValues}}};
+}
+
+function invalidatePeriodPreview(){
+  if(!previewResult) return;
+  previewResult=null;
+  document.getElementById('commitBtn').disabled=true;
+  document.getElementById('previewArea').innerHTML='';
+  document.getElementById('importMsg').innerHTML=
+    '<span class="warn">已修改匯入年月，請重新按「預覽與檢查」，確保日期與目的月份一致。</span>';
+}
+
+async function previewImport(){
+  const f=document.getElementById('file').files[0];
+  if(!f){
+    document.getElementById('importMsg').innerHTML='<span class="bad">請先選 Excel 檔。</span>';
+    return;
+  }
+
+  document.getElementById('previewBtn').disabled=true;
+  document.getElementById('commitBtn').disabled=true;
+  document.getElementById('importMsg').textContent='正在本機解析 Excel，並由原 XFI 邏輯檢查姓名／重複資料…';
+
+  try{
+    const type=document.getElementById('type').value;
+    const workbook=await excelWorkbookPayload(f,type);
+
+    const payload={
+      name:f.name,
+      year:Number(document.getElementById('year').value),
+      month:Number(document.getElementById('month').value),
+      type,
+      importMode:type==='schedule'?'replace':document.getElementById('importMode').value,
+      workbook
+    };
+
+    const r=await runPost('preview',payload);
+    previewResult=r;
+    renderPreview(r);
+
+  }catch(e){
+    document.getElementById('importMsg').innerHTML='<span class="bad">'+esc(e.message)+'</span>';
+  }finally{
+    document.getElementById('previewBtn').disabled=false;
+  }
+}
+
+function renderPreview(r){
+  document.getElementById('importMsg').innerHTML=
+    '<b>'+esc(r.fileName)+'</b>｜來源工作表：'+esc(r.sourceSheet)+'<br>'+
+    '匯入方式：<b>'+(r.importMode==='replace'?'取代本月同來源舊資料':'只新增新資料')+'</b><br>'+
+    '解析 '+esc(r.total)+' 筆；<span class="ok">可匯入 '+esc(r.valid)+'</span>；'+
+    '<span class="bad">異常 '+esc(r.invalid)+'</span>；'+
+    '<span class="warn">重複 '+esc(r.duplicate)+'</span>';
+
+  const monthWarnings=Array.isArray(r.monthWarnings)?r.monthWarnings:[];
+  const mismatch=!!r.monthMismatch;
+  if(mismatch){
+    const notice=monthWarnings.length?monthWarnings.join('；'):
+      '⚠ 選擇的月份與來源工作日期不一致，請改選正確月份並重新預覽';
+    document.getElementById('importMsg').innerHTML+=
+      '<div class="bad" style="margin-top:10px;font-weight:bold">'+esc(notice)+'</div>';
+    alert(notice);
+  }
+  document.getElementById('commitBtn').disabled=r.valid===0||mismatch;
+
+  const rows=r.rows.slice(0,100);
+  // 員餐差勤（涵郁）為每月彙總，第一個日期欄顯示實際匯入日期。
+  // 其他類別仍顯示事件／工作日期。
+  const dateHeader = r.type==='hanyuDays' ? '匯入日期' : '日期';
+  let h='<div class="tableWrap"><table><thead><tr>'+
+    '<th>原列</th><th>'+dateHeader+'</th><th>姓名</th><th>工作／代碼</th>'+
+    '<th>事件分類</th><th>時數／點數</th><th>單位</th><th>狀態</th><th>備註</th></tr></thead><tbody>';
+
+  rows.forEach(x=>{
+    const val=x.value??x.hours??x.points??(
+      x.type==='schedule'?'班表':(
+        typeof x.rawValue==='object'?'':x.rawValue??''
+      )
+    );
+    const status=String(x.previewStatus||'');
+    const cls=status.startsWith('可')?'ok':(status.startsWith('異常')?'bad':'warn');
+
+    h+='<tr>'+
+      '<td>'+esc(x.sourceRow||'')+'</td>'+
+      '<td>'+esc(x.dateISO||'')+'</td>'+
+      '<td>'+esc(x.name||'')+'</td>'+
+      '<td>'+esc(x.work||'')+'</td>'+
+      '<td>'+esc(x.type||'')+'</td>'+
+      '<td>'+esc(val)+'</td>'+
+      '<td>'+esc(x.unit||'')+'</td>'+
+      '<td class="'+cls+'">'+esc(status)+'</td>'+
+      '<td class="long">'+esc(x.note||'')+'</td>'+
+      '</tr>';
+  });
+
+  h+='</tbody></table></div>';
+  if(r.rows.length>100) h+='<div class="small" style="margin-top:6px">預覽只顯示前 100 筆；正式匯入仍使用全部有效資料。</div>';
+  document.getElementById('previewArea').innerHTML=h;
+}
+
+async function commitImport(){
+  if(!previewResult) return;
+
+  document.getElementById('commitBtn').disabled=true;
+  document.getElementById('previewBtn').disabled=true;
+  document.getElementById('importMsg').textContent='正在寫入管理表；需要進待確認的來源會自動執行原本「同步目前月份」…';
+
+  try{
+    const payload={
+      year:previewResult.year,
+      month:previewResult.month,
+      type:previewResult.type,
+      importMode:previewResult.importMode||'replace',
+      fileName:previewResult.fileName,
+      rows:previewResult.rows
+    };
+
+    const r=await runPost('commit',payload);
+    const ir=r.importResult||{};
+
+    document.getElementById('importMsg').innerHTML=
+      '<span class="ok"><b>匯入完成</b></span><br>'+
+      esc(ir.message||'')+
+      (r.syncCount!==null&&r.syncCount!==undefined
+        ? '<br>✓ 已自動同步目前月份：'+esc(r.syncCount)+' 筆全來源資料'
+        : '');
+
+    document.getElementById('previewArea').innerHTML='';
+    previewResult=null;
+
+    if(r.dashboard){
+      renderDashboard(r.dashboard);
+      document.getElementById('connMsg').innerHTML=
+        '<span class="ok">連線成功</span>｜後端 '+esc(r.dashboard.version)+
+        '｜目前 '+esc(r.dashboard.year)+' 年 '+esc(String(r.dashboard.month).padStart(2,'0'))+' 月';
+    }
+
+  }catch(e){
+    document.getElementById('importMsg').innerHTML='<span class="bad">'+esc(e.message)+'</span>';
+  }finally{
+    document.getElementById('previewBtn').disabled=false;
+  }
+}
+
+function clearImport(){
+  document.getElementById('file').value='';
+  previewResult=null;
+  document.getElementById('commitBtn').disabled=true;
+  document.getElementById('previewArea').innerHTML='';
+  document.getElementById('importMsg').textContent='請選 Excel，再按「預覽與檢查」。';
+}
 
 function saveJournalWorkbook(wb, fileName){
   const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
@@ -110,3 +854,33 @@ function downloadJournalTemplate(type){
     alert('範本下載失敗：'+e.message);
   }
 }
+
+
+async function runAction(action){
+  const box=document.getElementById('syncMsg');
+  box.textContent=action==='syncCurrentMonth'?'正在執行原本「同步目前月份」…':'處理中…';
+
+  try{
+    const r=await runPost(action,{});
+    const d=r.dashboard;
+
+    if(d) renderDashboard(d);
+
+    if(action==='syncCurrentMonth'){
+      box.innerHTML='<span class="ok"><b>同步完成</b></span>｜共 '+esc(r.count)+' 筆全來源資料。';
+    }else{
+      box.innerHTML='<span class="ok"><b>處理完成</b></span>';
+    }
+  }catch(e){
+    box.innerHTML='<span class="bad">'+esc(e.message)+'</span>';
+  }
+}
+
+document.getElementById('pin').addEventListener('keydown',e=>{
+  if(e.key==='Enter') connect();
+});
+
+sourceChanged();
+</script>
+</body>
+</html>
