@@ -77,7 +77,7 @@
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>欣豐｜北榮管理中心 <span class="version">前端 v2.2</span></h1>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v2.3</span></h1>
       <div class="subtitle">原 Code.gs 邏輯｜GitHub 主管入口｜Excel 本機解析｜Web App 以管理者權限執行</div>
     </div>
   </div>
@@ -132,14 +132,18 @@
       <div class="sourceCard">
         <div class="sourceName">溱日誌－溱</div><div class="sourceMeta" id="cZhen">—</div>
         <div class="actions">
-          <a class="btn secondary" href="./欣豐_北榮_溱日誌_地端填寫範本.xlsx" download>下載填寫範本</a>
+          <button class="secondary" onclick="downloadJournalTemplate('zhenJournal')">下載填寫範本</button>
           <button class="secondary" onclick="openImportType('zhenJournal')">匯入</button>
           <a class="btn secondary dynLink" data-sheet-template="{mm}月溱日誌" target="_blank">開啟</a>
         </div>
       </div>
       <div class="sourceCard">
-        <div class="sourceName">軒日誌</div><div class="sourceMeta" id="cXuan">—</div>
-        <a class="btn secondary dynLink" data-sheet-template="{mm}月軒日誌" target="_blank">開啟</a>
+        <div class="sourceName">軒日誌－明軒</div><div class="sourceMeta" id="cXuan">—</div>
+        <div class="actions">
+          <button class="secondary" onclick="downloadJournalTemplate('xuanJournal')">下載填寫範本</button>
+          <button class="secondary" onclick="openImportType('xuanJournal')">匯入</button>
+          <a class="btn secondary dynLink" data-sheet-template="{mm}月軒日誌" target="_blank">開啟</a>
+        </div>
       </div>
       <div class="sourceCard">
         <div class="sourceName">荃荃記事本／抽檢</div><div class="sourceMeta">由一鍵同步以管理者權限讀取</div>
@@ -194,6 +198,7 @@
           <label>資料來源</label>
           <select id="type" onchange="sourceChanged()">
             <option value="zhenJournal">溱日誌－溱</option>
+            <option value="xuanJournal">軒日誌－明軒</option>
             <option value="schedule">病患班表－明軒</option>
             <option value="shuru">病患加班－淑如</option>
             <option value="hanyuHours">員餐加班－涵郁</option>
@@ -201,6 +206,10 @@
             <option value="patientBonus">病患獎金－營養師</option>
             <option value="staffBonus">員餐獎金－營養師</option>
           </select>
+        </div>
+
+        <div class="wide">
+          <div id="sheetHint" class="notice" style="margin-top:0"></div>
         </div>
 
         <div class="wide">
@@ -239,6 +248,7 @@
 <script>
 const SOURCE_SHEET = {
   zhenJournal:'溱日誌',
+  xuanJournal:'軒日誌',
   schedule:'結帳',
   shuru:'淑如時數',
   hanyuHours:'涵郁時數',
@@ -558,6 +568,13 @@ function sourceChanged(){
     mode.disabled=false;
   }
 
+  const sheetName=SOURCE_SHEET[type]||'';
+  const hint=document.getElementById('sheetHint');
+  if(hint){
+    hint.innerHTML='<b>Excel 必須包含的分頁名稱：</b>「'+esc(sheetName)+'」<br>'+
+      '<span class="small">檔名可以不同，但 Excel 內分頁名稱必須完全一致。</span>';
+  }
+
   previewResult=null;
   document.getElementById('commitBtn').disabled=true;
   document.getElementById('previewArea').innerHTML='';
@@ -571,7 +588,10 @@ async function excelWorkbookPayload(file,type){
   const wb=XLSX.read(buf,{type:'array'});
   const ws=wb.Sheets[sheetName];
 
-  if(!ws) throw new Error('Excel 內找不到工作表「'+sheetName+'」。');
+  if(!ws) throw new Error(
+    'Excel 內找不到工作表「'+sheetName+'」。\n\n'+
+    '請把 Excel 分頁名稱改成「'+sheetName+'」後再匯入。'
+  );
 
   const values=XLSX.utils.sheet_to_json(ws,{
     header:1,defval:'',raw:true,blankrows:true
@@ -731,6 +751,41 @@ function clearImport(){
   document.getElementById('commitBtn').disabled=true;
   document.getElementById('previewArea').innerHTML='';
   document.getElementById('importMsg').textContent='請選 Excel，再按「預覽與檢查」。';
+}
+
+async function downloadJournalTemplate(type){
+  if(type!=='zhenJournal'&&type!=='xuanJournal'){
+    alert('目前只有溱日誌與軒日誌提供填寫範本。');
+    return;
+  }
+
+  if(!dashboardData){
+    alert('請先連線／更新狀態。');
+    return;
+  }
+
+  const popup=window.open('about:blank','_blank');
+  try{
+    const r=await runPost('createJournalTemplate',{
+      type,
+      year:Number(dashboardData.year),
+      month:Number(dashboardData.month)
+    });
+
+    if(!r||!r.downloadUrl) throw new Error('後端沒有回傳下載網址。');
+
+    if(popup) popup.location.href=r.downloadUrl;
+
+    const box=document.getElementById('syncMsg');
+    if(box){
+      box.innerHTML='<span class="ok"><b>'+esc(r.sheetName)+'範本已產生</b></span>｜'+
+        '<a href="'+esc(r.downloadUrl)+'" target="_blank" rel="noopener">點此下載 '+esc(r.fileName)+'</a>'+
+        '<br><span class="small">Excel 內分頁名稱已固定為「'+esc(r.sheetName)+'」。</span>';
+    }
+  }catch(e){
+    if(popup) popup.close();
+    alert('範本產生失敗：'+e.message);
+  }
 }
 
 async function runAction(action){
