@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
   <title>欣豐｜北榮管理中心</title>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>\n  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <style>
     :root{
       --bg:#f6f2ef; --card:#fff; --ink:#392f2a; --muted:#756760;
@@ -77,7 +77,7 @@
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>欣豐｜北榮管理中心 <span class="version">前端 v2.3</span></h1>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v3.0</span></h1>
       <div class="subtitle">原 Code.gs 邏輯｜GitHub 主管入口｜Excel 本機解析｜Web App 以管理者權限執行</div>
     </div>
   </div>
@@ -173,6 +173,16 @@
         <div class="sourceName">員餐獎金－營養師</div><div class="sourceMeta" id="cStaffBonus">—</div>
         <button class="secondary" onclick="openImportType('staffBonus')">匯入</button>
       </div>
+    </div>
+
+    <div class="sectionTitle">主管月核對</div>
+    <div class="quick">
+      <a class="btn secondary dynLink" data-sheet="主管月事件彙總" target="_blank">主管月事件彙總</a>
+      <a class="btn secondary dynLink" data-sheet="工作獎金發放｜主管待填" target="_blank">工作獎金</a>
+      <a class="btn secondary dynLink" data-sheet="激勵獎金發放｜主管待填" target="_blank">激勵獎金</a>
+      <a class="btn secondary dynLink" data-sheet="薪資檢查｜主管待填" target="_blank">薪資檢查</a>
+      <a class="btn secondary dynLink" data-sheet="薪資確認｜主管待填" target="_blank">薪資確認</a>
+      <a class="btn secondary dynLink" data-sheet="月結薪資" target="_blank">月結薪資</a>
     </div>
 
     <div class="sectionTitle">最近狀態</div>
@@ -464,7 +474,7 @@ function bindDynamicLinks(d){
 
 function renderAllLinks(d){
   const preferred=[
-    '首頁','目前月份匯總','待確認','主管確認中心','C支援差勤調整','月結薪資',
+    '首頁','目前月份匯總','待確認','主管確認中心','主管月事件彙總','工作獎金發放｜主管待填','激勵獎金發放｜主管待填','薪資檢查｜主管待填','薪資確認｜主管待填','C支援差勤調整','月結薪資',
     d.monthText+'月日誌彙總',d.monthText+'月溱日誌',d.monthText+'月軒日誌',
     '班表'+d.monthText+'月','班表位置統計','固定加班1.334','工作代碼','員工名冊',
     d.monthText+'月病患加班(淑如)',d.monthText+'月員餐加班(涵郁)',
@@ -753,39 +763,21 @@ function clearImport(){
   document.getElementById('importMsg').textContent='請選 Excel，再按「預覽與檢查」。';
 }
 
-function saveJournalWorkbook(wb, fileName){
-  const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
-  const blob=new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download=fileName;
-  a.target='_self';
-  a.rel='noopener';
-  a.style.display='none';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(()=>document.body.removeChild(a),0);
-  setTimeout(()=>{try{URL.revokeObjectURL(url)}catch(e){}},10*60*1000);
-  return url;
-}
-
-function downloadJournalTemplate(type){
+async function downloadJournalTemplate(type){
   if(type!=='zhenJournal'&&type!=='xuanJournal'){
     alert('目前只有溱日誌與軒日誌提供填寫範本。');
     return;
   }
 
-  if(!window.XLSX){
-    alert('Excel 產生元件尚未載入，請重新整理頁面後再試。');
+  if(!window.ExcelJS){
+    alert('Excel 範本元件尚未載入，請重新整理頁面後再試。');
     return;
   }
 
-  const year = dashboardData
+  const year=dashboardData
     ? Number(dashboardData.year)
     : Number(document.getElementById('year').value);
-
-  const month = dashboardData
+  const month=dashboardData
     ? Number(dashboardData.month)
     : Number(document.getElementById('month').value);
 
@@ -793,62 +785,114 @@ function downloadJournalTemplate(type){
     alert('請先連線／更新狀態，或確認民國年度。');
     return;
   }
-
   if(!Number.isInteger(month)||month<1||month>12){
     alert('請先連線／更新狀態，或確認月份。');
     return;
   }
 
-  const info = type==='xuanJournal'
-    ? {
-        sheetName:'軒日誌',
-        label:'軒日誌',
-        categories:'一般紀錄、純紀錄、其他、加點、扣點、額外加班、計時、遲到、專業獎勵'
-      }
-    : {
-        sheetName:'溱日誌',
-        label:'溱日誌',
-        categories:'純紀錄、其他、加點、扣點、額外加班、計時、遲到'
-      };
+  const info=type==='xuanJournal'
+    ? {sheetName:'軒日誌',label:'軒日誌'}
+    : {sheetName:'溱日誌',label:'溱日誌'};
 
+  const events=[
+    '純紀錄','其他','加點','扣點','衛生違規','工作表現','遲到',
+    '事假','病假','其他假別','額外加班','計時','借款','損壞','代墊','還款'
+  ];
+  const units=['點','hr','min','天','元'];
   const mm=String(month).padStart(2,'0');
 
-  const rows=[
-    ['欣豐｜'+mm+'月'+info.label+'填寫範本｜民國'+year+'年'+mm+'月'],
-    ['第4列開始填寫。日期填事件實際發生日期；姓名可填正式姓名或員工名冊中的綽號；事件分類可填：'+info.categories+'。加點／扣點'+(type==='xuanJournal'?'／專業獎勵':'')+'請填數值及「點」；額外加班／計時可直接填時數及「hr」，或填開始時間與結束時間。本分頁名稱「'+info.sheetName+'」請勿修改。'],
-    ['日期','姓名／綽號','工作代碼','事件分類','原始記事','數值','單位','開始時間','結束時間']
-  ];
-
-  for(let r=0;r<300;r++){
-    rows.push(['','','','','','','','','']);
-  }
-
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!merges']=[
-    XLSX.utils.decode_range('A1:I1'),
-    XLSX.utils.decode_range('A2:I2')
-  ];
-  ws['!cols']=[
-    {wch:13},{wch:16},{wch:15},{wch:15},{wch:48},
-    {wch:10},{wch:10},{wch:13},{wch:13}
-  ];
-
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,info.sheetName);
-
-  const fileName=
-    '欣豐_北榮_'+info.label+'_地端填寫範本_'+year+'年'+mm+'月.xlsx';
-
   try{
-    const url=saveJournalWorkbook(wb,fileName);
+    const wb=new ExcelJS.Workbook();
+    wb.creator='欣豐';
+    wb.created=new Date();
+    const ws=wb.addWorksheet(info.sheetName,{
+      views:[{state:'frozen',ySplit:3}]
+    });
+
+    ws.mergeCells('A1:I1');
+    ws.getCell('A1').value='欣豐｜'+mm+'月'+info.label+'填寫範本｜民國'+year+'年'+mm+'月';
+    ws.getCell('A1').font={name:'Microsoft JhengHei',size:16,bold:true,color:{argb:'FFFFFFFF'}};
+    ws.getCell('A1').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF8B6F5E'}};
+    ws.getCell('A1').alignment={horizontal:'center',vertical:'middle'};
+    ws.getRow(1).height=28;
+
+    ws.mergeCells('A2:I2');
+    ws.getCell('A2').value=
+      '第4列開始填寫｜事件分類請用下拉選單。遲到＝min；額外加班／計時＝hr；加點／扣點／衛生違規／工作表現＝點；事假／病假／其他假別＝天；借款／損壞／代墊／還款＝元。分頁名稱「'+info.sheetName+'」請勿修改。';
+    ws.getCell('A2').font={name:'Microsoft JhengHei',size:10,color:{argb:'FF5A4B43'}};
+    ws.getCell('A2').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF4EFEA'}};
+    ws.getCell('A2').alignment={wrapText:true,vertical:'middle'};
+    ws.getRow(2).height=42;
+
+    const headers=['日期','姓名／綽號','工作代碼','事件分類','原始記事','數值','單位','開始時間','結束時間'];
+    ws.addRow(headers);
+    ws.getRow(3).height=24;
+    ws.getRow(3).eachCell(cell=>{
+      cell.font={name:'Microsoft JhengHei',size:10,bold:true,color:{argb:'FF3B322E'}};
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD9D2E9'}};
+      cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};
+      cell.border={
+        top:{style:'thin',color:{argb:'FFD9D2CD'}},
+        left:{style:'thin',color:{argb:'FFD9D2CD'}},
+        bottom:{style:'thin',color:{argb:'FFD9D2CD'}},
+        right:{style:'thin',color:{argb:'FFD9D2CD'}}
+      };
+    });
+
+    ws.columns=[
+      {width:13},{width:16},{width:15},{width:16},{width:46},
+      {width:10},{width:10},{width:13},{width:13}
+    ];
+
+    for(let r=4;r<=303;r++){
+      const row=ws.getRow(r);
+      row.height=22;
+      for(let col=1;col<=9;col++){
+        const cell=row.getCell(col);
+        cell.font={name:'Microsoft JhengHei',size:10,color:{argb:'FF3B322E'}};
+        cell.alignment={vertical:'middle',wrapText:true};
+        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:(col===4||col===6||col===7)?'FFFFF6E5':'FFFFFFFF'}};
+        cell.border={
+          top:{style:'hair',color:{argb:'FFE6DED8'}},
+          left:{style:'hair',color:{argb:'FFE6DED8'}},
+          bottom:{style:'hair',color:{argb:'FFE6DED8'}},
+          right:{style:'hair',color:{argb:'FFE6DED8'}}
+        };
+      }
+      row.getCell(1).numFmt='yyyy/mm/dd';
+      row.getCell(4).dataValidation={
+        type:'list',allowBlank:true,
+        formulae:['"'+events.join(',')+'"'],
+        showErrorMessage:true,errorTitle:'事件分類不正確',error:'請從下拉選單選擇事件分類。'
+      };
+      row.getCell(7).dataValidation={
+        type:'list',allowBlank:true,
+        formulae:['"'+units.join(',')+'"'],
+        showErrorMessage:true,errorTitle:'單位不正確',error:'請選擇 點／hr／min／天／元。'
+      };
+      row.getCell(8).numFmt='hh:mm';
+      row.getCell(9).numFmt='hh:mm';
+    }
+
+    ws.autoFilter='A3:I303';
+
+    const buffer=await wb.xlsx.writeBuffer();
+    const fileName='欣豐_北榮_'+info.label+'_填寫範本_'+year+'年'+mm+'月.xlsx';
+    const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=fileName;
+    a.style.display='none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
 
     const box=document.getElementById('syncMsg');
     if(box){
       box.innerHTML=
-        '<span class="ok"><b>'+esc(info.label)+'範本已下載</b></span>｜'+
-        'Excel 分頁名稱固定為「'+esc(info.sheetName)+'」。填寫完成後可直接回來匯入。'+
-        '<br><span class="small">若沒有出現下載，請點：'+
-        '<a href="'+url+'" download="'+esc(fileName)+'" target="_self">手動下載'+esc(info.label)+'範本</a></span>';
+        '<span class="ok"><b>'+esc(info.label)+'範本已下載</b></span>｜事件分類與單位已做下拉選單，分頁名稱固定為「'+esc(info.sheetName)+'」。';
     }
   }catch(e){
     alert('範本下載失敗：'+e.message);
