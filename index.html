@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
   <title>欣豐｜北榮管理中心</title>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>\n  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <style>
     :root{
       --bg:#f6f2ef; --card:#fff; --ink:#392f2a; --muted:#756760;
@@ -77,8 +78,8 @@
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>欣豐｜北榮管理中心 <span class="version">前端 v3.0</span></h1>
-      <div class="subtitle">原 Code.gs 邏輯｜GitHub 主管入口｜Excel 本機解析｜Web App 以管理者權限執行</div>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v3.2</span></h1>
+      <div class="subtitle">北榮 v3.2｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
     </div>
   </div>
 
@@ -183,6 +184,14 @@
       <a class="btn secondary" href="https://docs.google.com/spreadsheets/d/1vyuQCtrVVVex3sbj44FsWGuP1-Vt7gVu_VwVvHeLfok/edit#gid=1785426444" target="_blank" rel="noopener">薪資檢查</a>
       <a class="btn secondary" href="https://docs.google.com/spreadsheets/d/1vyuQCtrVVVex3sbj44FsWGuP1-Vt7gVu_VwVvHeLfok/edit#gid=1289667519" target="_blank" rel="noopener">薪資確認</a>
       <a class="btn secondary dynLink" data-sheet="月結薪資" target="_blank">月結薪資</a>
+    </div>
+
+    <div class="sectionTitle">員工設定</div>
+    <div class="quick">
+      <a class="btn secondary dynLink" data-sheet="員工名冊" target="_blank">員工名冊</a>
+      <a class="btn secondary dynLink" data-sheet="工作代碼" target="_blank">工作代碼／職位設定</a>
+      <a class="btn secondary dynLink" data-sheet="員工保障薪資" target="_blank">員工保障薪資</a>
+      <a class="btn secondary dynLink" data-sheet="新人資料清冊" target="_blank">新人資料清冊</a>
     </div>
 
     <div class="sectionTitle">最近狀態</div>
@@ -476,7 +485,7 @@ function renderAllLinks(d){
   const preferred=[
     '首頁','目前月份匯總','待確認','主管確認中心','主管月事件彙總','工作獎金發放｜主管待填','激勵獎金發放｜主管待填','薪資檢查｜主管待填','薪資確認｜主管待填','C支援差勤調整','月結薪資',
     d.monthText+'月日誌彙總',d.monthText+'月溱日誌',d.monthText+'月軒日誌',
-    '班表'+d.monthText+'月','班表位置統計','固定加班1.334','工作代碼','員工名冊',
+    '班表'+d.monthText+'月','班表位置統計','固定加班1.334','固定加班1.667','額外加班1.334','額外加班1.667','計時','員工名冊','工作代碼','員工保障薪資','新人資料清冊',
     d.monthText+'月病患加班(淑如)',d.monthText+'月員餐加班(涵郁)',
     d.monthText+'月員餐差勤(涵郁)',d.monthText+'月病患獎金(營養師)',
     d.monthText+'月員餐獎金(營養師)',
