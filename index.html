@@ -40,6 +40,7 @@
     .label{font-size:13px;color:var(--muted)}
     .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
     .sectionTitle{font-size:18px;margin:22px 0 10px}
+    .groupLabel{font-size:13px;font-weight:800;color:var(--muted);margin:14px 0 7px;padding-left:2px}
     .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
     .quick button,.quick a{min-height:54px}
     .sourceGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -177,23 +178,37 @@
     </div>
 
     <div class="sectionTitle">主管確認中心</div>
+
+    <div class="groupLabel">待辦與月度檢視</div>
     <div class="quick">
-      <a class="btn secondary dynLink" data-sheet="待確認" target="_blank">1. 待確認</a>
-      <a class="btn secondary dynLink" data-sheet="主管月事件彙總" target="_blank">2. 主管月事件彙總</a>
-      <a class="btn secondary dynLink" data-sheet="本月事件明細" target="_blank">3. 本月事件明細</a>
-      <a class="btn secondary dynLink" data-sheet="工作獎金發放｜主管待填" target="_blank">4. 工作獎金發放</a>
-      <a class="btn secondary dynLink" data-sheet="C支援差勤調整" target="_blank">5. C支援差勤調整</a>
-      <a class="btn secondary dynLink" data-sheet="激勵獎金發放｜主管待填" target="_blank">6. 激勵獎金發放</a>
-      <a class="btn secondary dynLink" data-sheet="班表位置統計" target="_blank">7. 班表位置統計</a>
-      <a class="btn secondary dynLink" data-sheet="病患延長工時" target="_blank">8. 病患延長工時</a>
-      <a class="btn secondary dynLink" data-sheet="員餐延長工時" target="_blank">9. 員餐延長工時</a>
-      <a class="btn secondary dynLink" data-sheet="固定加班1.334" target="_blank">10. 固定加班1.334</a>
-      <a class="btn secondary dynLink" data-sheet="固定加班1.667" target="_blank">11. 固定加班1.667</a>
-      <a class="btn secondary dynLink" data-sheet="額外加班1.334" target="_blank">12. 額外加班1.334</a>
-      <a class="btn secondary dynLink" data-sheet="額外加班1.667" target="_blank">13. 額外加班1.667</a>
-      <a class="btn secondary dynLink" data-sheet="計時" target="_blank">14. 計時</a>
-      <a class="btn secondary dynLink" data-sheet="薪資補扣確認｜主管待填" target="_blank">15. 薪資補扣確認</a>
-      <a class="btn secondary dynLink" data-sheet="月薪最終確認｜主管待填" target="_blank">16. 月薪最終確認</a>
+      <a class="btn secondary dynLink" data-sheet="待確認" target="_blank">待確認</a>
+      <a class="btn secondary dynLink" data-sheet="主管月事件彙總" target="_blank">主管月事件彙總</a>
+      <a class="btn secondary dynLink" data-sheet="本月事件明細" target="_blank">本月事件明細</a>
+      <a class="btn secondary dynLink" data-sheet="班表位置統計" target="_blank">班表位置統計</a>
+    </div>
+
+    <div class="groupLabel">獎金核對</div>
+    <div class="quick">
+      <a class="btn secondary dynLink" data-sheet="工作獎金發放｜主管待填" target="_blank">工作獎金發放</a>
+      <a class="btn secondary dynLink" data-sheet="C支援差勤調整" target="_blank">C支援差勤調整</a>
+      <a class="btn secondary dynLink" data-sheet="激勵獎金發放｜主管待填" target="_blank">激勵獎金發放</a>
+    </div>
+
+    <div class="groupLabel">加班與計時</div>
+    <div class="quick">
+      <a class="btn secondary dynLink" data-sheet="病患延長工時" target="_blank">病患延長工時</a>
+      <a class="btn secondary dynLink" data-sheet="員餐延長工時" target="_blank">員餐延長工時</a>
+      <a class="btn secondary dynLink" data-sheet="固定加班1.334" target="_blank">固定加班1.334</a>
+      <a class="btn secondary dynLink" data-sheet="固定加班1.667" target="_blank">固定加班1.667</a>
+      <a class="btn secondary dynLink" data-sheet="額外加班1.334" target="_blank">額外加班1.334</a>
+      <a class="btn secondary dynLink" data-sheet="額外加班1.667" target="_blank">額外加班1.667</a>
+      <a class="btn secondary dynLink" data-sheet="計時" target="_blank">計時</a>
+    </div>
+
+    <div class="groupLabel">薪資確認</div>
+    <div class="quick">
+      <a class="btn secondary dynLink" data-sheet="薪資補扣確認｜主管待填" target="_blank">薪資補扣確認</a>
+      <a class="btn secondary dynLink" data-sheet="月薪最終確認｜主管待填" target="_blank">月薪最終確認</a>
     </div>
 
     <div class="sectionTitle">員工設定</div>
