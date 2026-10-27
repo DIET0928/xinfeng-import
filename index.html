@@ -79,8 +79,8 @@
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>欣豐｜北榮管理中心 <span class="version">前端 v3.3</span></h1>
-      <div class="subtitle">北榮 v3.3｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v3.4</span></h1>
+      <div class="subtitle">北榮 v3.4｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
     </div>
   </div>
 
@@ -903,7 +903,7 @@ async function downloadJournalTemplate(type){
 
     ws.mergeCells('A2:I2');
     ws.getCell('A2').value=
-      '第4列開始填寫｜事件分類請用下拉選單。遲到＝min；額外加班／計時＝hr；加點／扣點／衛生違規／工作表現＝點；事假／病假／其他假別＝天；借款／損壞／代墊／還款＝元。分頁名稱「'+info.sheetName+'」請勿修改。';
+      '第4列開始填寫｜事件分類請用下拉選單。遲到可填 min 或 hr（hr 會自動換算 min）；額外加班可填 hr 或點（hr 進加班、點進 C支援差勤）；計時＝hr；加點／扣點／衛生違規／工作表現＝點；病假可填天或 hr；事假／其他假別＝天；借款／損壞／代墊／還款＝元；純紀錄可不填姓名、數值與單位。分頁名稱「'+info.sheetName+'」請勿修改。';
     ws.getCell('A2').font={name:'Microsoft JhengHei',size:10,color:{argb:'FF5A4B43'}};
     ws.getCell('A2').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF4EFEA'}};
     ws.getCell('A2').alignment={wrapText:true,vertical:'middle'};
