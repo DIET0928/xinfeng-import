@@ -289,6 +289,47 @@ const SOURCE_SHEET = {
 let dashboardData = null;
 let previewResult = null;
 
+const SPREADSHEET_BASE='https://docs.google.com/spreadsheets/d/1vyuQCtrVVVex3sbj44FsWGuP1-Vt7gVu_VwVvHeLfok/edit';
+const SHEET_GIDS={
+  '首頁':910001,
+  '主管確認中心':910202,
+  '待確認':910201,
+  '主管月事件彙總':1432552562,
+  '本月事件明細':980001,
+  '工作獎金發放｜主管待填':88292654,
+  'C支援差勤調整':990004,
+  '激勵獎金發放｜主管待填':206879202,
+  '班表位置統計':2099999301,
+  '病患延長工時':11928492,
+  '員餐延長工時':1400965888,
+  '固定加班1.334':1672227084,
+  '固定加班1.667':1542766471,
+  '額外加班1.334':1900495922,
+  '額外加班1.667':231248734,
+  '計時':995312428,
+  '薪資補扣確認｜主管待填':1785426444,
+  '月薪最終確認｜主管待填':1289667519,
+  '外部資料匯入中心':2099999101,
+  '員工名冊':930001,
+  '工作代碼':35773656,
+  '員工保障薪資':2034031475,
+  '新人資料清冊':1445516420,
+  '新人報到操作流程':1864202609,
+  '使用者指南':990005,
+  '角色分工導航':990007,
+  '設定':1826225538,
+  '制度版本':960001
+};
+
+function fallbackSheetUrl(name){
+  const gid=SHEET_GIDS[name];
+  return gid ? SPREADSHEET_BASE+'#gid='+gid : '';
+}
+
+function resolvedSheetUrl(d,name){
+  return (d && d.links && d.links[name]) || fallbackSheetUrl(name) || '';
+}
+
 for(let i=1;i<=12;i++){
   const o=document.createElement('option');
   o.value=i;o.textContent=i+'月';
@@ -478,7 +519,7 @@ function bindDynamicLinks(d){
     let name=a.dataset.sheet||'';
     if(a.dataset.sheetTemplate) name=a.dataset.sheetTemplate.replace('{mm}',mm);
 
-    const url=d.links&&d.links[name];
+    const url=resolvedSheetUrl(d,name);
     if(url){
       a.href=url;
       a.style.pointerEvents='';
@@ -512,7 +553,7 @@ function renderAllLinks(d){
   grid.innerHTML='';
 
   preferred.forEach(name=>{
-    const url=d.links&&d.links[name];
+    const url=resolvedSheetUrl(d,name);
     if(!url) return;
 
     const a=document.createElement('a');
@@ -522,6 +563,10 @@ function renderAllLinks(d){
     a.textContent=name;
     grid.appendChild(a);
   });
+
+  if(!grid.children.length){
+    grid.innerHTML='<div class="notice wide">目前沒有可用入口。請先按「連線／更新狀態」；若仍無法顯示，請重新部署 Apps Script Web App。</div>';
+  }
 }
 
 function showTab(id,btn){
