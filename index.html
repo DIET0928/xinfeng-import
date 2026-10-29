@@ -79,8 +79,8 @@
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>欣豐｜北榮管理中心 <span class="version">前端 v3.9</span></h1>
-      <div class="subtitle">北榮 v3.9｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v4.0</span></h1>
+      <div class="subtitle">北榮 v4.0｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
     </div>
   </div>
 
@@ -134,7 +134,7 @@
       <div class="sourceCard">
         <div class="sourceName">溱日誌－溱</div><div class="sourceMeta" id="cZhen">—</div>
         <div class="actions">
-          <button class="secondary" onclick="downloadJournalTemplate('zhenJournal')">下載新版範本（含差勤類型）</button>
+          <button class="secondary" onclick="downloadJournalTemplate('zhenJournal')">下載新版範本</button>
           <button class="secondary" onclick="openImportType('zhenJournal')">匯入</button>
           <a class="btn secondary dynLink" data-sheet-template="{mm}月溱日誌" target="_blank">開啟</a>
         </div>
@@ -142,7 +142,7 @@
       <div class="sourceCard">
         <div class="sourceName">瑄日誌－瑄</div><div class="sourceMeta" id="cHsuan">—</div>
         <div class="actions">
-          <button class="secondary" onclick="downloadJournalTemplate('hsuanJournal')">下載新版範本（含差勤類型）</button>
+          <button class="secondary" onclick="downloadJournalTemplate('hsuanJournal')">下載新版範本</button>
           <button class="secondary" onclick="openImportType('hsuanJournal')">匯入</button>
           <a class="btn secondary dynLink" data-sheet-template="{mm}月瑄日誌" target="_blank">開啟</a>
         </div>
@@ -886,13 +886,14 @@ async function downloadJournalTemplate(type){
     return;
   }
 
-  const info=type==='xuanJournal'
+  const isXuan=type==='xuanJournal';
+  const info=isXuan
     ? {sheetName:'軒日誌',label:'軒日誌'}
     : type==='hsuanJournal'
       ? {sheetName:'瑄日誌',label:'瑄日誌'}
       : {sheetName:'溱日誌',label:'溱日誌'};
 
-  const events=type==='xuanJournal'
+  const events=isXuan
     ? [
         '純紀錄',
         '工作獎金-C支援差勤',
@@ -909,6 +910,7 @@ async function downloadJournalTemplate(type){
         '純紀錄','其他','加點','扣點','衛生違規','工作表現','遲到',
         '事假','病假','其他假別','額外加班','計時','借款','損壞','代墊','還款'
       ];
+
   const units=['點','hr','min','天','元'];
   const mm=String(month).padStart(2,'0');
 
@@ -916,27 +918,30 @@ async function downloadJournalTemplate(type){
     const wb=new ExcelJS.Workbook();
     wb.creator='欣豐';
     wb.created=new Date();
-    const ws=wb.addWorksheet(info.sheetName,{
-      views:[{state:'frozen',ySplit:3}]
-    });
 
-    ws.mergeCells('A1:K1');
+    const ws=wb.addWorksheet(info.sheetName,{views:[{state:'frozen',ySplit:3}]});
+    const lastCol=isXuan?'K':'J';
+
+    ws.mergeCells('A1:'+lastCol+'1');
     ws.getCell('A1').value='欣豐｜'+mm+'月'+info.label+'填寫範本｜民國'+year+'年'+mm+'月';
     ws.getCell('A1').font={name:'Microsoft JhengHei',size:16,bold:true,color:{argb:'FFFFFFFF'}};
     ws.getCell('A1').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF8B6F5E'}};
     ws.getCell('A1').alignment={horizontal:'center',vertical:'middle'};
     ws.getRow(1).height=28;
 
-    ws.mergeCells('A2:K2');
-    ws.getCell('A2').value=type==='xuanJournal'
-      ? '第4列開始填寫｜D欄先選最終事件分類；若選「激勵獎金-D差勤」，下一欄E「差勤類型」必須選病假／事假／喪假。G填數值、H填單位（天／hr／min）；I:J可填額外加班／計時起訖時間；若選「激勵獎金-C遲到」，K欄自動換算總分鐘。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。'
-      : '第4列開始填寫｜遲到：事件分類選「遲到」，F填數值、G選hr或min，J欄會自動換算為總分鐘。差勤直接在事件分類選病假／事假／喪假假別，F填數值、G可選天／hr／min，不需要另外選差勤類型。月底依8hr=1day、60min=1hr統計。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。';
+    ws.mergeCells('A2:'+lastCol+'2');
+    ws.getCell('A2').value=isXuan
+      ? '第4列開始填寫｜D欄先選最終事件分類；若選「激勵獎金-D差勤」，下一欄E依原型選病假／事假／喪假。G填數值、H填單位（天／hr／min）；I/J是時間欄，可直接輸入14:00、18:15。若選「激勵獎金-C遲到」，K欄自動換算總分鐘。差勤月底依8hr=1day統計，喪假歸入其他。'
+      : '第4列開始填寫｜遲到：事件分類選「遲到」，F填數值、G選hr或min，J欄自動換算總分鐘。差勤直接在事件分類選病假／事假／其他假別，F填數值、G可選天／hr／min，不需要另外選差勤類型。月底依8hr=1day、60min=1hr統計。';
     ws.getCell('A2').font={name:'Microsoft JhengHei',size:10,color:{argb:'FF5A4B43'}};
     ws.getCell('A2').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF4EFEA'}};
     ws.getCell('A2').alignment={wrapText:true,vertical:'middle'};
-    ws.getRow(2).height=42;
+    ws.getRow(2).height=48;
 
-    const headers=type==='xuanJournal' ? ['日期','姓名／綽號','工作代碼','事件分類','差勤類型','原始記事','數值','單位','開始時間','結束時間','遲到統計(min)'] : ['日期','姓名／綽號','工作代碼','事件分類','原始記事','數值','單位','開始時間','結束時間','遲到統計(min)'];
+    const headers=isXuan
+      ? ['日期','姓名／綽號','工作代碼','事件分類','差勤類型','原始記事','數值','單位','開始時間（選填）','結束時間（選填）','遲到統計(min)']
+      : ['日期','姓名／綽號','工作代碼','事件分類','原始記事','數值','單位','開始時間（選填）','結束時間（選填）','遲到統計(min)'];
+
     ws.addRow(headers);
     ws.getRow(3).height=24;
     ws.getRow(3).eachCell(cell=>{
@@ -951,19 +956,22 @@ async function downloadJournalTemplate(type){
       };
     });
 
-    ws.columns=[
-      {width:13},{width:16},{width:15},{width:22},{width:12},{width:46},
-      {width:10},{width:10},{width:13},{width:13},{width:14},{width:14}
-    ];
+    ws.columns=isXuan
+      ? [{width:13},{width:16},{width:15},{width:22},{width:12},{width:46},{width:10},{width:10},{width:13},{width:13},{width:14}]
+      : [{width:13},{width:16},{width:15},{width:18},{width:46},{width:10},{width:10},{width:13},{width:13},{width:14}];
 
     for(let r=4;r<=303;r++){
       const row=ws.getRow(r);
       row.height=22;
-      for(let col=1;col<=11;col++){
+
+      for(let col=1;col<=headers.length;col++){
         const cell=row.getCell(col);
         cell.font={name:'Microsoft JhengHei',size:10,color:{argb:'FF3B322E'}};
         cell.alignment={vertical:'middle',wrapText:true};
-        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:(col===4||col===6||col===7)?'FFFFF6E5':'FFFFFFFF'}};
+        let editable=false;
+        if(isXuan) editable=[4,5,7,8].includes(col);
+        else editable=[4,6,7].includes(col);
+        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:editable?'FFFFF6E5':'FFFFFFFF'}};
         cell.border={
           top:{style:'hair',color:{argb:'FFE6DED8'}},
           left:{style:'hair',color:{argb:'FFE6DED8'}},
@@ -971,43 +979,63 @@ async function downloadJournalTemplate(type){
           right:{style:'hair',color:{argb:'FFE6DED8'}}
         };
       }
+
       row.getCell(1).numFmt='yyyy/mm/dd';
+
       row.getCell(4).dataValidation={
         type:'list',allowBlank:true,
         formulae:['"'+events.join(',')+'"'],
-        showErrorMessage:true,errorTitle:'事件分類不正確',error:'請從下拉選單選擇事件分類。'
+        showErrorMessage:true,errorTitle:'事件分類不正確',
+        error:'請從下拉選單選擇事件分類。'
       };
-      row.getCell(7).dataValidation={
-        type:'list',allowBlank:true,
-        formulae:['"'+units.join(',')+'"'],
-        showErrorMessage:true,errorTitle:'單位不正確',error:'請選擇 點／hr／min／天／元。'
-      };
-      if(type==='xuanJournal'){
-        row.getCell(9).numFmt='hh:mm';
-        row.getCell(10).numFmt='hh:mm';
-      }else{
-        row.getCell(8).numFmt='hh:mm';
-        row.getCell(9).numFmt='hh:mm';
-      }
-      if(type==='xuanJournal'){
+
+      if(isXuan){
         row.getCell(5).dataValidation={
           type:'list',allowBlank:true,
           formulae:['"病假,事假,喪假"'],
           showErrorMessage:true,errorTitle:'差勤類型不正確',
           error:'激勵獎金-D差勤請選病假／事假／喪假。'
         };
-        row.getCell(5).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF6E5'}};
-        row.getCell(11).value={formula:'IF(D'+r+'="激勵獎金-C遲到",IF(G'+r+'="hr",ROUND(F'+r+'*60,0),IF(G'+r+'="min",ROUND(F'+r+',0),"")),"")'};
+        row.getCell(8).dataValidation={
+          type:'list',allowBlank:true,
+          formulae:['"'+units.join(',')+'"'],
+          showErrorMessage:true,errorTitle:'單位不正確',
+          error:'請選擇 點／hr／min／天／元。'
+        };
+
+        // I/J 同為真正時間欄，樣式完全相同、白底。
+        row.getCell(9).numFmt='hh:mm';
+        row.getCell(10).numFmt='hh:mm';
+        row.getCell(9).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}};
+        row.getCell(10).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}};
+        row.getCell(9).alignment={horizontal:'center',vertical:'middle'};
+        row.getCell(10).alignment={horizontal:'center',vertical:'middle'};
+
+        // G=數值、H=單位。
+        row.getCell(11).value={formula:'IF(D'+r+'="激勵獎金-C遲到",IF(H'+r+'="hr",ROUND(G'+r+'*60,0),IF(H'+r+'="min",ROUND(G'+r+',0),"")),"")'};
         row.getCell(11).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3F7F1'}};
       }else{
-        row.getCell(10).value={formula:'IF(D'+r+'="病假","病假",IF(D'+r+'="事假","事假",IF(D'+r+'="其他假別","其他","")))'}; 
-        row.getCell(10).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3F3F3'}};
-        row.getCell(11).value={formula:'IF(D'+r+'="遲到",IF(G'+r+'="hr",ROUND(F'+r+'*60,0),IF(G'+r+'="min",ROUND(F'+r+',0),"")),"")'};
-        row.getCell(11).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3F7F1'}};
+        row.getCell(7).dataValidation={
+          type:'list',allowBlank:true,
+          formulae:['"'+units.join(',')+'"'],
+          showErrorMessage:true,errorTitle:'單位不正確',
+          error:'請選擇 點／hr／min／天／元。'
+        };
+
+        row.getCell(8).numFmt='hh:mm';
+        row.getCell(9).numFmt='hh:mm';
+        row.getCell(8).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}};
+        row.getCell(9).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}};
+        row.getCell(8).alignment={horizontal:'center',vertical:'middle'};
+        row.getCell(9).alignment={horizontal:'center',vertical:'middle'};
+
+        // 溱／瑄沒有差勤類型欄；J只做遲到分鐘。
+        row.getCell(10).value={formula:'IF(D'+r+'="遲到",IF(G'+r+'="hr",ROUND(F'+r+'*60,0),IF(G'+r+'="min",ROUND(F'+r+',0),"")),"")'};
+        row.getCell(10).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3F7F1'}};
       }
     }
 
-    ws.autoFilter='A3:K303';
+    ws.autoFilter='A3:'+lastCol+'303';
 
     const buffer=await wb.xlsx.writeBuffer();
     const fileName='欣豐_北榮_'+info.label+'_填寫範本_'+year+'年'+mm+'月.xlsx';
@@ -1024,14 +1052,14 @@ async function downloadJournalTemplate(type){
 
     const box=document.getElementById('syncMsg');
     if(box){
-      box.innerHTML=
-        '<span class="ok"><b>'+esc(info.label)+'範本已下載</b></span>｜新版已含 J 欄「差勤類型」與 K 欄「遲到統計(min)」；軒D差勤需選病假／事假／喪假。分頁名稱固定為「'+esc(info.sheetName)+'」。';
+      box.innerHTML=isXuan
+        ? '<span class="ok"><b>軒日誌範本已下載</b></span>｜D事件分類後下一欄E為差勤類型（病假／事假／喪假）；I/J為相同白底時間欄；K為遲到分鐘。'
+        : '<span class="ok"><b>'+esc(info.label)+'範本已下載</b></span>｜差勤直接由事件分類判斷；J為遲到統計(min)。';
     }
   }catch(e){
     alert('範本下載失敗：'+e.message);
   }
 }
-
 
 async function runAction(action){
   const box=document.getElementById('syncMsg');
