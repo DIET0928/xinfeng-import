@@ -930,7 +930,7 @@ async function downloadJournalTemplate(type){
     ws.mergeCells('A2:K2');
     ws.getCell('A2').value=type==='xuanJournal'
       ? '第4列開始填寫｜軒日誌由主管本人直接選最終分類。若事件分類為「激勵獎金-D差勤」，J欄「差勤類型」必須選病假／事假／其他。D差勤單位可填天／hr／min；H:I僅供額外加班／計時填起訖時間。純紀錄不進待確認；若系統懷疑分類可能錯誤，仍會匯入並送待確認標示「⚠可能分類錯誤」。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。'
-      : '第4列開始填寫｜事件分類請用下拉選單。遲到可填 min 或 hr；D差勤可填天／hr／min。事件分類選病假／事假／其他假別時，J欄「差勤類型」會自動帶出病假／事假／其他。額外加班可填 hr 或點；純紀錄可不填姓名、數值與單位。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。';
+      : '第4列開始填寫｜遲到：事件分類選「遲到」，F填數值、G選hr或min，J欄會自動換算為總分鐘。差勤直接在事件分類選病假／事假／其他假別，F填數值、G可選天／hr／min，不需要另外選差勤類型。月底依8hr=1day、60min=1hr統計。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。';
     ws.getCell('A2').font={name:'Microsoft JhengHei',size:10,color:{argb:'FF5A4B43'}};
     ws.getCell('A2').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF4EFEA'}};
     ws.getCell('A2').alignment={wrapText:true,vertical:'middle'};
