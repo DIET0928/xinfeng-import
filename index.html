@@ -79,8 +79,8 @@
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>欣豐｜北榮管理中心 <span class="version">前端 v4.1</span></h1>
-      <div class="subtitle">北榮 v4.1｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v4.2</span></h1>
+      <div class="subtitle">北榮 v4.2｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
     </div>
   </div>
 
@@ -276,7 +276,12 @@
 
         <div class="wide">
           <label>Excel 檔案</label>
-          <input id="file" type="file" accept=".xlsx,.xls">
+          <input id="file" type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+          <div class="actions">
+            <button type="button" class="secondary" id="chooseFileBtn" onclick="chooseExcelFile()">選擇 Excel 檔案</button>
+            <button type="button" class="secondary" id="clearFileBtn" onclick="clearSelectedFile()" disabled>清除已選檔案</button>
+          </div>
+          <div id="fileNameMsg" class="small" style="margin-top:7px">尚未選擇檔案。</div>
         </div>
       </div>
 
@@ -709,6 +714,58 @@ async function excelWorkbookPayload(file,type){
   return {sheets:{[sheetName]:{values,displayValues}}};
 }
 
+function chooseExcelFile(){
+  const input=document.getElementById('file');
+  if(!input) return;
+  try{
+    input.value='';
+    input.click();
+  }catch(e){
+    document.getElementById('fileNameMsg').innerHTML=
+      '<span class="bad">無法開啟檔案選擇器。請改用 Chrome／Safari 開啟此頁。</span>';
+  }
+}
+
+function clearSelectedFile(){
+  const input=document.getElementById('file');
+  if(input) input.value='';
+  previewResult=null;
+  document.getElementById('commitBtn').disabled=true;
+  document.getElementById('previewArea').innerHTML='';
+  document.getElementById('fileNameMsg').textContent='尚未選擇檔案。';
+  document.getElementById('clearFileBtn').disabled=true;
+  document.getElementById('importMsg').textContent='請選 Excel，再按「預覽與檢查」。';
+}
+
+function onExcelFileChanged(){
+  const input=document.getElementById('file');
+  const file=input && input.files && input.files[0];
+  const msg=document.getElementById('fileNameMsg');
+  const clearBtn=document.getElementById('clearFileBtn');
+
+  previewResult=null;
+  document.getElementById('commitBtn').disabled=true;
+  document.getElementById('previewArea').innerHTML='';
+
+  if(!file){
+    msg.textContent='尚未選擇檔案。';
+    clearBtn.disabled=true;
+    return;
+  }
+
+  const ok=/\.(xlsx|xls)$/i.test(file.name);
+  if(!ok){
+    input.value='';
+    msg.innerHTML='<span class="bad">只接受 .xlsx 或 .xls Excel 檔案。</span>';
+    clearBtn.disabled=true;
+    return;
+  }
+
+  msg.innerHTML='<span class="ok"><b>已選擇：</b>'+esc(file.name)+'</span>';
+  clearBtn.disabled=false;
+  document.getElementById('importMsg').textContent='檔案已選擇，請按「預覽與檢查」。';
+}
+
 function invalidatePeriodPreview(){
   if(!previewResult) return;
   previewResult=null;
@@ -852,11 +909,7 @@ async function commitImport(){
 }
 
 function clearImport(){
-  document.getElementById('file').value='';
-  previewResult=null;
-  document.getElementById('commitBtn').disabled=true;
-  document.getElementById('previewArea').innerHTML='';
-  document.getElementById('importMsg').textContent='請選 Excel，再按「預覽與檢查」。';
+  clearSelectedFile();
 }
 
 async function downloadJournalTemplate(type){
@@ -1084,6 +1137,8 @@ async function runAction(action){
 document.getElementById('pin').addEventListener('keydown',e=>{
   if(e.key==='Enter') connect();
 });
+
+document.getElementById('file').addEventListener('change',onExcelFileChanged);
 
 sourceChanged();
 </script>
