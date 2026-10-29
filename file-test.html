@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>檔案選擇測試</title>
+<style>
+body{font-family:Arial,"Microsoft JhengHei",sans-serif;padding:24px;line-height:1.6}
+.box{max-width:600px;margin:auto;border:1px solid #ccc;border-radius:12px;padding:20px}
+input{display:block;width:100%;padding:14px;margin:12px 0;font-size:16px}
+.ok{color:#17733b;font-weight:700}
+</style>
+</head>
+<body>
+<div class="box">
+<h2>原生 Excel 檔案選擇測試</h2>
+<p>這頁沒有 Apps Script、沒有 SheetJS、沒有其他管理程式。請直接點下面的原生檔案欄。</p>
+<input id="file" type="file" accept=".xlsx,.xls">
+<div id="msg">尚未選擇檔案。</div>
+</div>
+<script>
+document.getElementById('file').addEventListener('change',function(){
+  const f=this.files&&this.files[0];
+  document.getElementById('msg').innerHTML=f
+    ? '<span class="ok">已選擇：'+f.name+'</span>'
+    : '尚未選擇檔案。';
+});
+</script>
+</body>
+</html>
