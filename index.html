@@ -79,8 +79,8 @@
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>欣豐｜北榮管理中心 <span class="version">前端 v3.4</span></h1>
-      <div class="subtitle">北榮 v3.4｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v3.5</span></h1>
+      <div class="subtitle">北榮 v3.5｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
     </div>
   </div>
 
@@ -920,23 +920,23 @@ async function downloadJournalTemplate(type){
       views:[{state:'frozen',ySplit:3}]
     });
 
-    ws.mergeCells('A1:I1');
+    ws.mergeCells('A1:J1');
     ws.getCell('A1').value='欣豐｜'+mm+'月'+info.label+'填寫範本｜民國'+year+'年'+mm+'月';
     ws.getCell('A1').font={name:'Microsoft JhengHei',size:16,bold:true,color:{argb:'FFFFFFFF'}};
     ws.getCell('A1').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF8B6F5E'}};
     ws.getCell('A1').alignment={horizontal:'center',vertical:'middle'};
     ws.getRow(1).height=28;
 
-    ws.mergeCells('A2:I2');
+    ws.mergeCells('A2:J2');
     ws.getCell('A2').value=type==='xuanJournal'
-      ? '第4列開始填寫｜軒日誌由主管本人直接選最終分類。主要分類：工作獎金-C支援差勤、激勵獎金-B工作表現事件、純紀錄；另保留衛生、遲到、差勤、D專業獎勵、額外加班、計時、薪資檢查。純紀錄不進待確認；若系統懷疑分類可能錯誤，仍會匯入並送待確認標示「⚠可能分類錯誤」。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。'
-      : '第4列開始填寫｜事件分類請用下拉選單。遲到可填 min 或 hr（hr 會自動換算 min）；額外加班可填 hr 或點（hr 進加班、點進 C支援差勤）；計時＝hr；加點／扣點／衛生違規／工作表現＝點；病假可填天或 hr；事假／其他假別＝天；借款／損壞／代墊／還款＝元；純紀錄可不填姓名、數值與單位。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。';
+      ? '第4列開始填寫｜軒日誌由主管本人直接選最終分類。若事件分類為「激勵獎金-D差勤」，J欄「差勤類型」必須選病假／事假／其他。D差勤單位可填天／hr／min；H:I僅供額外加班／計時填起訖時間。純紀錄不進待確認；若系統懷疑分類可能錯誤，仍會匯入並送待確認標示「⚠可能分類錯誤」。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。'
+      : '第4列開始填寫｜事件分類請用下拉選單。遲到可填 min 或 hr；D差勤可填天／hr／min。事件分類選病假／事假／其他假別時，J欄「差勤類型」會自動帶出病假／事假／其他。額外加班可填 hr 或點；純紀錄可不填姓名、數值與單位。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。';
     ws.getCell('A2').font={name:'Microsoft JhengHei',size:10,color:{argb:'FF5A4B43'}};
     ws.getCell('A2').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF4EFEA'}};
     ws.getCell('A2').alignment={wrapText:true,vertical:'middle'};
     ws.getRow(2).height=42;
 
-    const headers=['日期','姓名／綽號','工作代碼','事件分類','原始記事','數值','單位','開始時間','結束時間'];
+    const headers=['日期','姓名／綽號','工作代碼','事件分類','原始記事','數值','單位','開始時間','結束時間','差勤類型'];
     ws.addRow(headers);
     ws.getRow(3).height=24;
     ws.getRow(3).eachCell(cell=>{
@@ -953,13 +953,13 @@ async function downloadJournalTemplate(type){
 
     ws.columns=[
       {width:13},{width:16},{width:15},{width:16},{width:46},
-      {width:10},{width:10},{width:13},{width:13}
+      {width:10},{width:10},{width:13},{width:13},{width:12}
     ];
 
     for(let r=4;r<=303;r++){
       const row=ws.getRow(r);
       row.height=22;
-      for(let col=1;col<=9;col++){
+      for(let col=1;col<=10;col++){
         const cell=row.getCell(col);
         cell.font={name:'Microsoft JhengHei',size:10,color:{argb:'FF3B322E'}};
         cell.alignment={vertical:'middle',wrapText:true};
@@ -984,9 +984,21 @@ async function downloadJournalTemplate(type){
       };
       row.getCell(8).numFmt='hh:mm';
       row.getCell(9).numFmt='hh:mm';
+      if(type==='xuanJournal'){
+        row.getCell(10).dataValidation={
+          type:'list',allowBlank:true,
+          formulae:['"病假,事假,其他"'],
+          showErrorMessage:true,errorTitle:'差勤類型不正確',
+          error:'激勵獎金-D差勤請選病假／事假／其他。'
+        };
+        row.getCell(10).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF6E5'}};
+      }else{
+        row.getCell(10).value={formula:'IF(D'+r+'="病假","病假",IF(D'+r+'="事假","事假",IF(D'+r+'="其他假別","其他","")))'}; 
+        row.getCell(10).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3F3F3'}};
+      }
     }
 
-    ws.autoFilter='A3:I303';
+    ws.autoFilter='A3:J303';
 
     const buffer=await wb.xlsx.writeBuffer();
     const fileName='欣豐_北榮_'+info.label+'_填寫範本_'+year+'年'+mm+'月.xlsx';
@@ -1004,7 +1016,7 @@ async function downloadJournalTemplate(type){
     const box=document.getElementById('syncMsg');
     if(box){
       box.innerHTML=
-        '<span class="ok"><b>'+esc(info.label)+'範本已下載</b></span>｜事件分類與單位已做下拉選單，分頁名稱固定為「'+esc(info.sheetName)+'」。';
+        '<span class="ok"><b>'+esc(info.label)+'範本已下載</b></span>｜新版已含 J 欄「差勤類型」；軒D差勤需選病假／事假／其他。分頁名稱固定為「'+esc(info.sheetName)+'」。';
     }
   }catch(e){
     alert('範本下載失敗：'+e.message);
