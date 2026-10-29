@@ -79,8 +79,8 @@
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>欣豐｜北榮管理中心 <span class="version">前端 v3.7</span></h1>
-      <div class="subtitle">北榮 v3.7｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v3.8</span></h1>
+      <div class="subtitle">北榮 v3.8｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
     </div>
   </div>
 
@@ -929,7 +929,7 @@ async function downloadJournalTemplate(type){
 
     ws.mergeCells('A2:K2');
     ws.getCell('A2').value=type==='xuanJournal'
-      ? '第4列開始填寫｜軒日誌由主管本人直接選最終分類。若事件分類為「激勵獎金-D差勤」，J欄「差勤類型」必須選病假／事假／其他。D差勤單位可填天／hr／min；H:I僅供額外加班／計時填起訖時間。純紀錄不進待確認；若系統懷疑分類可能錯誤，仍會匯入並送待確認標示「⚠可能分類錯誤」。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。'
+      ? '第4列開始填寫｜D欄先選最終事件分類；若選「激勵獎金-D差勤」，下一欄E「差勤類型」必須選病假／事假／其他。G填數值、H填單位（天／hr／min）；I:J可填額外加班／計時起訖時間；若選「激勵獎金-C遲到」，K欄自動換算總分鐘。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。'
       : '第4列開始填寫｜遲到：事件分類選「遲到」，F填數值、G選hr或min，J欄會自動換算為總分鐘。差勤直接在事件分類選病假／事假／其他假別，F填數值、G可選天／hr／min，不需要另外選差勤類型。月底依8hr=1day、60min=1hr統計。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。';
     ws.getCell('A2').font={name:'Microsoft JhengHei',size:10,color:{argb:'FF5A4B43'}};
     ws.getCell('A2').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF4EFEA'}};
