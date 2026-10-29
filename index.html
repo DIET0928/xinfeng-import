@@ -127,7 +127,7 @@
       <a class="btn secondary" href="https://docs.google.com/spreadsheets/d/1vyuQCtrVVVex3sbj44FsWGuP1-Vt7gVu_VwVvHeLfok/edit#gid=674830837" target="_blank" rel="noopener">開啟月結薪資</a>
     </div>
 
-    <div id="syncMsg" class="msg">連線後可直接同步荃荃／溱／軒／抽檢／營養師／淑如／涵郁，計算仍使用原本 Code.gs。</div>
+    <div id="syncMsg" class="msg">連線後可直接同步荃荃／溱／瑄／軒／抽檢／營養師／淑如／涵郁，計算仍使用原本 Code.gs。</div>
 
     <div class="sectionTitle">本月來源</div>
     <div class="sourceGrid">
@@ -137,6 +137,14 @@
           <button class="secondary" onclick="downloadJournalTemplate('zhenJournal')">下載填寫範本</button>
           <button class="secondary" onclick="openImportType('zhenJournal')">匯入</button>
           <a class="btn secondary dynLink" data-sheet-template="{mm}月溱日誌" target="_blank">開啟</a>
+        </div>
+      </div>
+      <div class="sourceCard">
+        <div class="sourceName">瑄日誌－瑄</div><div class="sourceMeta" id="cHsuan">—</div>
+        <div class="actions">
+          <button class="secondary" onclick="downloadJournalTemplate('hsuanJournal')">下載填寫範本</button>
+          <button class="secondary" onclick="openImportType('hsuanJournal')">匯入</button>
+          <a class="btn secondary dynLink" data-sheet-template="{mm}月瑄日誌" target="_blank">開啟</a>
         </div>
       </div>
       <div class="sourceCard">
@@ -242,6 +250,7 @@
           <label>資料來源</label>
           <select id="type" onchange="sourceChanged()">
             <option value="zhenJournal">溱日誌－溱</option>
+            <option value="hsuanJournal">瑄日誌－瑄</option>
             <option value="xuanJournal">軒日誌－明軒</option>
             <option value="schedule">病患班表－明軒</option>
             <option value="shuru">病患加班－淑如</option>
@@ -292,6 +301,7 @@
 <script>
 const SOURCE_SHEET = {
   zhenJournal:'溱日誌',
+  hsuanJournal:'瑄日誌',
   xuanJournal:'軒日誌',
   schedule:'結帳',
   shuru:'淑如時數',
@@ -507,6 +517,7 @@ function renderDashboard(d){
   document.getElementById('mWarn').textContent=d.pendingWarnings;
 
   document.getElementById('cZhen').textContent=(d.sourceCounts.zhen||0)+' 筆';
+  document.getElementById('cHsuan').textContent=(d.sourceCounts.hsuan||0)+' 筆';
   document.getElementById('cXuan').textContent=(d.sourceCounts.xuan||0)+' 筆';
   document.getElementById('cSchedule').textContent=(d.sourceCounts.schedule||0)+' 人';
   document.getElementById('cShuru').textContent=(d.sourceCounts.shuru||0)+' 筆';
@@ -556,7 +567,7 @@ function renderAllLinks(d){
     '固定加班1.334','固定加班1.667','額外加班1.334','額外加班1.667','計時',
     '薪資補扣確認｜主管待填','月薪最終確認｜主管待填',
     '首頁','外部資料匯入中心','員工名冊','工作代碼','員工保障薪資','新人資料清冊',
-    d.monthText+'月日誌彙總',d.monthText+'月溱日誌',d.monthText+'月軒日誌',
+    d.monthText+'月日誌彙總',d.monthText+'月溱日誌',d.monthText+'月瑄日誌',d.monthText+'月軒日誌',
     '班表'+d.monthText+'月',
     d.monthText+'月病患加班(淑如)',d.monthText+'月員餐加班(涵郁)',
     d.monthText+'月員餐差勤(涵郁)',d.monthText+'月病患獎金(營養師)',
@@ -849,8 +860,8 @@ function clearImport(){
 }
 
 async function downloadJournalTemplate(type){
-  if(type!=='zhenJournal'&&type!=='xuanJournal'){
-    alert('目前只有溱日誌與軒日誌提供填寫範本。');
+  if(type!=='zhenJournal'&&type!=='hsuanJournal'&&type!=='xuanJournal'){
+    alert('目前只有溱日誌、瑄日誌與軒日誌提供填寫範本。');
     return;
   }
 
@@ -877,7 +888,9 @@ async function downloadJournalTemplate(type){
 
   const info=type==='xuanJournal'
     ? {sheetName:'軒日誌',label:'軒日誌'}
-    : {sheetName:'溱日誌',label:'溱日誌'};
+    : type==='hsuanJournal'
+      ? {sheetName:'瑄日誌',label:'瑄日誌'}
+      : {sheetName:'溱日誌',label:'溱日誌'};
 
   const events=[
     '純紀錄','其他','加點','扣點','衛生違規','工作表現','遲到',
