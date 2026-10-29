@@ -79,8 +79,8 @@
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>欣豐｜北榮管理中心 <span class="version">前端 v4.52</span></h1>
-      <div class="subtitle">北榮 v4.52｜輕量匯入｜背景完整維護｜主管月核對｜Excel 本機解析</div>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v4.53</span></h1>
+      <div class="subtitle">北榮 v4.53｜極輕量匯入｜背景完整維護｜主管月核對｜Excel 本機解析</div>
     </div>
   </div>
 
@@ -813,7 +813,7 @@ async function commitImport(){
 
   document.getElementById('commitBtn').disabled=true;
   document.getElementById('previewBtn').disabled=true;
-  document.getElementById('importMsg').textContent='正在寫入管理表；需要進待確認的來源會自動執行原本「同步目前月份」…';
+  document.getElementById('importMsg').textContent='正在寫入管理表；本次只做必要寫入，不執行同步或大型重算…';
 
   try{
     const payload={
@@ -831,9 +831,7 @@ async function commitImport(){
     document.getElementById('importMsg').innerHTML=
       '<span class="ok"><b>匯入完成</b></span><br>'+
       esc(ir.message||'')+
-      (r.syncCount!==null&&r.syncCount!==undefined
-        ? '<br>✓ 已自動同步目前月份：'+esc(r.syncCount)+' 筆全來源資料'
-        : '');
+      (r.maintenanceRequired ? '<br><span class="warn">⚠ 資料已寫入；需要重算時請按「完整維護（全月份）」</span>' : '');
 
     document.getElementById('previewArea').innerHTML='';
     previewResult=null;
