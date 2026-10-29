@@ -79,8 +79,8 @@
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>欣豐｜北榮管理中心 <span class="version">前端 v4.2</span></h1>
-      <div class="subtitle">北榮 v4.2｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v4.3</span></h1>
+      <div class="subtitle">北榮 v4.3｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
     </div>
   </div>
 
@@ -276,12 +276,13 @@
 
         <div class="wide">
           <label>Excel 檔案</label>
-          <input id="file" type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
-          <div class="actions">
-            <button type="button" class="secondary" id="chooseFileBtn" onclick="chooseExcelFile()">選擇 Excel 檔案</button>
+          <input id="file" type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" style="display:block;width:100%;padding:12px;border:1px solid #cfc4bd;border-radius:8px;background:#fff">
+          <div class="actions" style="margin-top:8px">
+            <label for="file" class="btn secondary" style="margin:0;cursor:pointer">開啟檔案選擇器</label>
             <button type="button" class="secondary" id="clearFileBtn" onclick="clearSelectedFile()" disabled>清除已選檔案</button>
           </div>
           <div id="fileNameMsg" class="small" style="margin-top:7px">尚未選擇檔案。</div>
+          <div class="small" style="margin-top:5px">若點「開啟檔案選擇器」仍無反應，請直接點上方瀏覽器原生的檔案欄。</div>
         </div>
       </div>
 
@@ -718,11 +719,10 @@ function chooseExcelFile(){
   const input=document.getElementById('file');
   if(!input) return;
   try{
-    input.value='';
     input.click();
   }catch(e){
     document.getElementById('fileNameMsg').innerHTML=
-      '<span class="bad">無法開啟檔案選擇器。請改用 Chrome／Safari 開啟此頁。</span>';
+      '<span class="bad">此瀏覽器阻擋檔案選擇。請直接點上方原生檔案欄，或改用 Chrome／Safari。</span>';
   }
 }
 
