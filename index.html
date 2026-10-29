@@ -100,7 +100,7 @@
         <button class="secondary" onclick="setWorkingPeriod()">套用正式作業月份</button>
       </div>
       <div class="small" style="margin-top:7px">
-        切換前會先保存舊月份待確認中的主管核定；切換月份不會自動抓外部資料，切換後再按「一鍵同步目前月份」。
+        切換前會先保存舊月份待確認中的主管核定；切換月份不會自動抓外部資料，切換後再按「更新目前月份」。
       </div>
     </div>
   </div>
@@ -121,8 +121,8 @@
 
     <div class="sectionTitle">常用操作</div>
     <div class="quick">
-      <button class="primary" onclick="runAction('syncCurrentMonth')">一鍵同步目前月份</button>
-      <button class="secondary" id="fullMaintenanceBtn" onclick="startFullMaintenance()">完整維護（目前月份）</button>
+      <button class="primary" onclick="runAction('syncCurrentMonth')">更新目前月份</button>
+      <button class="secondary" id="fullMaintenanceBtn" onclick="startFullMaintenance()">修復目前月份</button>
       <button class="secondary" onclick="showTabById('import')">外部 Excel 匯入</button>
       <a class="btn secondary dynLink" data-sheet="待確認" target="_blank">開啟待確認</a>
       <a class="btn secondary" href="https://docs.google.com/spreadsheets/d/1vyuQCtrVVVex3sbj44FsWGuP1-Vt7gVu_VwVvHeLfok/edit#gid=674830837" target="_blank" rel="noopener">開啟月結薪資</a>
@@ -636,7 +636,7 @@ async function setWorkingPeriod(){
     '這會更新「設定」B13／B14，以及首頁、本月事件明細、待確認、主管確認中心。\n'+
     '切換前會先保存目前待確認中的主管核定。\n'+
     '既有各月份資料不會刪除。\n\n'+
-    '切換後如需更新外部來源，再按「一鍵同步目前月份」。'
+    '切換後如需更新外部來源，再按「更新目前月份」。'
   );
   if(!ok) return;
 
@@ -657,7 +657,7 @@ async function setWorkingPeriod(){
     box.innerHTML=
       '<span class="ok"><b>月份切換完成</b></span>｜正式作業月份：'+
       esc(r.dashboard.year)+' 年 '+esc(String(r.dashboard.month).padStart(2,'0'))+' 月'+
-      '｜下一步可按「一鍵同步目前月份」';
+      '｜下一步可按「更新目前月份」';
 
   }catch(e){
     box.innerHTML='<span class="bad">月份切換失敗</span>｜'+esc(e.message);
@@ -831,7 +831,7 @@ async function commitImport(){
     document.getElementById('importMsg').innerHTML=
       '<span class="ok"><b>匯入完成</b></span><br>'+
       esc(ir.message||'')+
-      (r.maintenanceRequired ? '<br><span class="warn">⚠ 資料已寫入；需要同步與重算時請按「完整維護（目前月份）」</span>' : '');
+      (r.maintenanceRequired ? '<br><span class="warn">⚠ 資料已寫入；需要同步與重算時請按「修復目前月份」</span>' : '');
 
     document.getElementById('previewArea').innerHTML='';
     previewResult=null;
@@ -1133,7 +1133,7 @@ async function pollMaintenanceStatus(){
 
 async function startFullMaintenance(){
   const ok=confirm(
-    '要啟動「完整維護（目前月份）」嗎？\n\n'+
+    '要啟動「修復目前月份」嗎？\n\n'+
     '會在背景分 5 階段執行：\n'+
     '1. 同步目前月份全部來源／目前月份日誌彙總\n'+
     '2. 目前月份溱／瑄／軒公式與姓名核對重建\n'+
