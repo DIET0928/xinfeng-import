@@ -936,7 +936,7 @@ async function downloadJournalTemplate(type){
     ws.getCell('A2').alignment={wrapText:true,vertical:'middle'};
     ws.getRow(2).height=42;
 
-    const headers=['日期','姓名／綽號','工作代碼','事件分類','原始記事','數值','單位','開始時間','結束時間','差勤類型','遲到統計(min)'];
+    const headers=type==='xuanJournal' ? ['日期','姓名／綽號','工作代碼','事件分類','差勤類型','原始記事','數值','單位','開始時間','結束時間','遲到統計(min)'] : ['日期','姓名／綽號','工作代碼','事件分類','原始記事','數值','單位','開始時間','結束時間','遲到統計(min)'];
     ws.addRow(headers);
     ws.getRow(3).height=24;
     ws.getRow(3).eachCell(cell=>{
