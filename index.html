@@ -79,8 +79,8 @@
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>欣豐｜北榮管理中心 <span class="version">前端 v4.53</span></h1>
-      <div class="subtitle">北榮 v4.53｜極輕量匯入｜背景完整維護｜主管月核對｜Excel 本機解析</div>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v4.54</span></h1>
+      <div class="subtitle">北榮 v4.54｜極輕量匯入｜目前月份背景維護｜主管月核對｜Excel 本機解析</div>
     </div>
   </div>
 
@@ -122,7 +122,7 @@
     <div class="sectionTitle">常用操作</div>
     <div class="quick">
       <button class="primary" onclick="runAction('syncCurrentMonth')">一鍵同步目前月份</button>
-      <button class="secondary" id="fullMaintenanceBtn" onclick="startFullMaintenance()">完整維護（全月份）</button>
+      <button class="secondary" id="fullMaintenanceBtn" onclick="startFullMaintenance()">完整維護（目前月份）</button>
       <button class="secondary" onclick="showTabById('import')">外部 Excel 匯入</button>
       <a class="btn secondary dynLink" data-sheet="待確認" target="_blank">開啟待確認</a>
       <a class="btn secondary" href="https://docs.google.com/spreadsheets/d/1vyuQCtrVVVex3sbj44FsWGuP1-Vt7gVu_VwVvHeLfok/edit#gid=674830837" target="_blank" rel="noopener">開啟月結薪資</a>
@@ -831,7 +831,7 @@ async function commitImport(){
     document.getElementById('importMsg').innerHTML=
       '<span class="ok"><b>匯入完成</b></span><br>'+
       esc(ir.message||'')+
-      (r.maintenanceRequired ? '<br><span class="warn">⚠ 資料已寫入；需要重算時請按「完整維護（全月份）」</span>' : '');
+      (r.maintenanceRequired ? '<br><span class="warn">⚠ 資料已寫入；需要同步與重算時請按「完整維護（目前月份）」</span>' : '');
 
     document.getElementById('previewArea').innerHTML='';
     previewResult=null;
@@ -1133,13 +1133,13 @@ async function pollMaintenanceStatus(){
 
 async function startFullMaintenance(){
   const ok=confirm(
-    '要啟動「完整維護（全月份）」嗎？\n\n'+
+    '要啟動「完整維護（目前月份）」嗎？\n\n'+
     '會在背景分 5 階段執行：\n'+
-    '1. 全月份同步／全月日誌彙總\n'+
-    '2. 大範圍公式與姓名核對重建\n'+
-    '3. 整張待確認重算\n'+
-    '4. 12 個月份驗證修復\n'+
-    '5. 首頁與主管中心最後刷新\n\n'+
+    '1. 同步目前月份全部來源／目前月份日誌彙總\n'+
+    '2. 目前月份溱／瑄／軒公式與姓名核對重建\n'+
+    '3. 目前月份整張待確認重算\n'+
+    '4. 目前月份資料驗證修復\n'+
+    '5. 本月事件明細／主管中心／首頁最後刷新\n\n'+
     '啟動後可以繼續使用 GitHub 頁面，不會等待全部完成。'
   );
   if(!ok) return;
