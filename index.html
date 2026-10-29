@@ -892,10 +892,23 @@ async function downloadJournalTemplate(type){
       ? {sheetName:'瑄日誌',label:'瑄日誌'}
       : {sheetName:'溱日誌',label:'溱日誌'};
 
-  const events=[
-    '純紀錄','其他','加點','扣點','衛生違規','工作表現','遲到',
-    '事假','病假','其他假別','額外加班','計時','借款','損壞','代墊','還款'
-  ];
+  const events=type==='xuanJournal'
+    ? [
+        '純紀錄',
+        '工作獎金-C支援差勤',
+        '激勵獎金-B工作表現事件',
+        '激勵獎金-A衛生事件',
+        '激勵獎金-C遲到',
+        '激勵獎金-D差勤',
+        '工作獎金-D專業獎勵',
+        '額外加班',
+        '計時',
+        '薪資檢查'
+      ]
+    : [
+        '純紀錄','其他','加點','扣點','衛生違規','工作表現','遲到',
+        '事假','病假','其他假別','額外加班','計時','借款','損壞','代墊','還款'
+      ];
   const units=['點','hr','min','天','元'];
   const mm=String(month).padStart(2,'0');
 
@@ -915,8 +928,9 @@ async function downloadJournalTemplate(type){
     ws.getRow(1).height=28;
 
     ws.mergeCells('A2:I2');
-    ws.getCell('A2').value=
-      '第4列開始填寫｜事件分類請用下拉選單。遲到可填 min 或 hr（hr 會自動換算 min）；額外加班可填 hr 或點（hr 進加班、點進 C支援差勤）；計時＝hr；加點／扣點／衛生違規／工作表現＝點；病假可填天或 hr；事假／其他假別＝天；借款／損壞／代墊／還款＝元；純紀錄可不填姓名、數值與單位。分頁名稱「'+info.sheetName+'」請勿修改。';
+    ws.getCell('A2').value=type==='xuanJournal'
+      ? '第4列開始填寫｜軒日誌由主管本人直接選最終分類。主要分類：工作獎金-C支援差勤、激勵獎金-B工作表現事件、純紀錄；另保留衛生、遲到、差勤、D專業獎勵、額外加班、計時、薪資檢查。純紀錄不進待確認；若系統懷疑分類可能錯誤，仍會匯入並送待確認標示「⚠可能分類錯誤」。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。'
+      : '第4列開始填寫｜事件分類請用下拉選單。遲到可填 min 或 hr（hr 會自動換算 min）；額外加班可填 hr 或點（hr 進加班、點進 C支援差勤）；計時＝hr；加點／扣點／衛生違規／工作表現＝點；病假可填天或 hr；事假／其他假別＝天；借款／損壞／代墊／還款＝元；純紀錄可不填姓名、數值與單位。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。';
     ws.getCell('A2').font={name:'Microsoft JhengHei',size:10,color:{argb:'FF5A4B43'}};
     ws.getCell('A2').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF4EFEA'}};
     ws.getCell('A2').alignment={wrapText:true,vertical:'middle'};
