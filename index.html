@@ -79,8 +79,8 @@
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>欣豐｜北榮管理中心 <span class="version">前端 v3.8</span></h1>
-      <div class="subtitle">北榮 v3.8｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
+      <h1>欣豐｜北榮管理中心 <span class="version">前端 v3.9</span></h1>
+      <div class="subtitle">北榮 v3.9｜主管月核對｜員工設定｜Excel 本機解析｜Web App 以管理者權限執行</div>
     </div>
   </div>
 
@@ -929,8 +929,8 @@ async function downloadJournalTemplate(type){
 
     ws.mergeCells('A2:K2');
     ws.getCell('A2').value=type==='xuanJournal'
-      ? '第4列開始填寫｜D欄先選最終事件分類；若選「激勵獎金-D差勤」，下一欄E「差勤類型」必須選病假／事假／其他。G填數值、H填單位（天／hr／min）；I:J可填額外加班／計時起訖時間；若選「激勵獎金-C遲到」，K欄自動換算總分鐘。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。'
-      : '第4列開始填寫｜遲到：事件分類選「遲到」，F填數值、G選hr或min，J欄會自動換算為總分鐘。差勤直接在事件分類選病假／事假／其他假別，F填數值、G可選天／hr／min，不需要另外選差勤類型。月底依8hr=1day、60min=1hr統計。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。';
+      ? '第4列開始填寫｜D欄先選最終事件分類；若選「激勵獎金-D差勤」，下一欄E「差勤類型」必須選病假／事假／喪假。G填數值、H填單位（天／hr／min）；I:J可填額外加班／計時起訖時間；若選「激勵獎金-C遲到」，K欄自動換算總分鐘。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。'
+      : '第4列開始填寫｜遲到：事件分類選「遲到」，F填數值、G選hr或min，J欄會自動換算為總分鐘。差勤直接在事件分類選病假／事假／喪假假別，F填數值、G可選天／hr／min，不需要另外選差勤類型。月底依8hr=1day、60min=1hr統計。未對應員工仍會匯入並提醒新增員工。分頁名稱「'+info.sheetName+'」請勿修改。';
     ws.getCell('A2').font={name:'Microsoft JhengHei',size:10,color:{argb:'FF5A4B43'}};
     ws.getCell('A2').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF4EFEA'}};
     ws.getCell('A2').alignment={wrapText:true,vertical:'middle'};
@@ -952,8 +952,8 @@ async function downloadJournalTemplate(type){
     });
 
     ws.columns=[
-      {width:13},{width:16},{width:15},{width:16},{width:46},
-      {width:10},{width:10},{width:13},{width:13},{width:12},{width:14}
+      {width:13},{width:16},{width:15},{width:22},{width:12},{width:46},
+      {width:10},{width:10},{width:13},{width:13},{width:14},{width:14}
     ];
 
     for(let r=4;r<=303;r++){
@@ -982,16 +982,21 @@ async function downloadJournalTemplate(type){
         formulae:['"'+units.join(',')+'"'],
         showErrorMessage:true,errorTitle:'單位不正確',error:'請選擇 點／hr／min／天／元。'
       };
-      row.getCell(8).numFmt='hh:mm';
-      row.getCell(9).numFmt='hh:mm';
       if(type==='xuanJournal'){
-        row.getCell(10).dataValidation={
+        row.getCell(9).numFmt='hh:mm';
+        row.getCell(10).numFmt='hh:mm';
+      }else{
+        row.getCell(8).numFmt='hh:mm';
+        row.getCell(9).numFmt='hh:mm';
+      }
+      if(type==='xuanJournal'){
+        row.getCell(5).dataValidation={
           type:'list',allowBlank:true,
-          formulae:['"病假,事假,其他"'],
+          formulae:['"病假,事假,喪假"'],
           showErrorMessage:true,errorTitle:'差勤類型不正確',
-          error:'激勵獎金-D差勤請選病假／事假／其他。'
+          error:'激勵獎金-D差勤請選病假／事假／喪假。'
         };
-        row.getCell(10).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF6E5'}};
+        row.getCell(5).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFF6E5'}};
         row.getCell(11).value={formula:'IF(D'+r+'="激勵獎金-C遲到",IF(G'+r+'="hr",ROUND(F'+r+'*60,0),IF(G'+r+'="min",ROUND(F'+r+',0),"")),"")'};
         row.getCell(11).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3F7F1'}};
       }else{
@@ -1020,7 +1025,7 @@ async function downloadJournalTemplate(type){
     const box=document.getElementById('syncMsg');
     if(box){
       box.innerHTML=
-        '<span class="ok"><b>'+esc(info.label)+'範本已下載</b></span>｜新版已含 J 欄「差勤類型」與 K 欄「遲到統計(min)」；軒D差勤需選病假／事假／其他。分頁名稱固定為「'+esc(info.sheetName)+'」。';
+        '<span class="ok"><b>'+esc(info.label)+'範本已下載</b></span>｜新版已含 J 欄「差勤類型」與 K 欄「遲到統計(min)」；軒D差勤需選病假／事假／喪假。分頁名稱固定為「'+esc(info.sheetName)+'」。';
     }
   }catch(e){
     alert('範本下載失敗：'+e.message);
